@@ -1,7 +1,7 @@
 extends Node2D
 
 # Fragment Rush: Corrida dos Cristais
-# v0.7 - Nucleo de Cultivo + Tecnicas
+# v0.9.1 - Biomas + Tutorial + Corrida Viva
 # Runner mobile com atmosfera wuxia/cultivation: fluxo, ressonancia e ascensao.
 
 const SAVE_PATH: String = "user://fragment_rush_save.json"
@@ -33,6 +33,7 @@ var result_layer: CanvasLayer
 var shop_layer: CanvasLayer
 var pause_layer: CanvasLayer
 var cultivation_layer: CanvasLayer
+var tutorial_layer: CanvasLayer
 
 var score_label: Label
 var crystal_label: Label
@@ -50,6 +51,7 @@ var result_card: Panel
 var shop_card: Panel
 var pause_card: Panel
 var cultivation_card: Panel
+var tutorial_card: Panel
 
 var title_label: Label
 var subtitle_label: Label
@@ -59,10 +61,15 @@ var close_shop_button: Button
 var shop_info_label: Label
 var daily_button: Button
 var cultivation_button: Button
+var help_button: Button
 var shop_skin_buttons: Dictionary = {}
 var cultivation_info_label: Label
 var cultivation_close_button: Button
 var cultivation_upgrade_buttons: Dictionary = {}
+var tutorial_title: Label
+var tutorial_text: Label
+var tutorial_close_button: Button
+var biome_label: Label
 
 var result_title: Label
 var result_stats: Label
@@ -105,6 +112,11 @@ var last_daily_reward: String = ""
 var run_mission_bonus: int = 0
 var completed_run_missions: Array[String] = []
 var cultivation_xp: int = 0
+var tutorial_seen: bool = false
+var current_biome_index: int = 0
+var rare_crystals_run: int = 0
+var crystal_rain_timer: float = 11.0
+var crystal_rain_active: float = 0.0
 var last_xp_gain: int = 0
 var technique_levels: Dictionary = {"dash": 0, "jade": 0, "flow": 0}
 
@@ -128,6 +140,41 @@ const CULTIVATION_STAGES: Array[String] = [
 	"Núcleo Refinado",
 	"Fluxo Celestial",
 	"Ascensão Cristalina"
+]
+
+const BIOMES: Array = [
+	{
+		"name": "Trilha do Céu Fragmentado",
+		"at": 0.0,
+		"deep": Color(0.027, 0.078, 0.149, 1.0),
+		"mist": Color(0.035, 0.120, 0.210, 1.0),
+		"accent": Color(0.322, 0.902, 1.0, 1.0),
+		"secondary": Color(0.384, 0.949, 0.706, 1.0)
+	},
+	{
+		"name": "Vale de Jade Suspenso",
+		"at": 700.0,
+		"deep": Color(0.018, 0.105, 0.115, 1.0),
+		"mist": Color(0.035, 0.175, 0.155, 1.0),
+		"accent": Color(0.384, 0.949, 0.706, 1.0),
+		"secondary": Color(0.322, 0.902, 1.0, 1.0)
+	},
+	{
+		"name": "Ruínas da Lua Partida",
+		"at": 1500.0,
+		"deep": Color(0.050, 0.042, 0.145, 1.0),
+		"mist": Color(0.105, 0.070, 0.225, 1.0),
+		"accent": Color(0.541, 0.361, 1.0, 1.0),
+		"secondary": Color(1.0, 0.851, 0.502, 1.0)
+	},
+	{
+		"name": "Portão da Ascensão",
+		"at": 2500.0,
+		"deep": Color(0.115, 0.070, 0.028, 1.0),
+		"mist": Color(0.190, 0.115, 0.045, 1.0),
+		"accent": Color(1.0, 0.851, 0.502, 1.0),
+		"secondary": Color(0.918, 0.984, 1.0, 1.0)
+	}
 ]
 
 var spawn_timer: float = 0.0
@@ -154,6 +201,8 @@ func _ready() -> void:
 	build_game_nodes()
 	build_ui()
 	show_menu()
+	if not tutorial_seen:
+		show_tutorial()
 
 func _process(delta: float) -> void:
 	var real_delta: float = delta
@@ -261,6 +310,8 @@ func build_ui() -> void:
 	add_child(pause_layer)
 	cultivation_layer = CanvasLayer.new()
 	add_child(cultivation_layer)
+	tutorial_layer = CanvasLayer.new()
+	add_child(tutorial_layer)
 
 	# HUD - glassmorphism espiritual
 	var hud_left_panel: Panel = make_panel(Vector2(22, 22), Vector2(205, 96), Color(0.03, 0.12, 0.20, 0.72), Color(C_CELESTIAL.r, C_CELESTIAL.g, C_CELESTIAL.b, 0.26))
@@ -312,6 +363,11 @@ func build_ui() -> void:
 	pause_button.pressed.connect(pause_game)
 	hud_layer.add_child(pause_button)
 
+	biome_label = make_label("", 17, Vector2(0, 252), Color(0.82, 0.96, 1.0, 0.86))
+	biome_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	biome_label.size = Vector2(VIEW_W, 34)
+	hud_layer.add_child(biome_label)
+
 	# Menu principal
 	menu_card = make_panel(Vector2(48, 150), Vector2(624, 730), Color(0.03, 0.11, 0.19, 0.62), Color(C_CELESTIAL.r, C_CELESTIAL.g, C_CELESTIAL.b, 0.22))
 	menu_layer.add_child(menu_card)
@@ -327,13 +383,16 @@ func build_ui() -> void:
 	start_button = make_button("INICIAR CORRIDA", Vector2(102, 348), Vector2(420, 82))
 	shop_button = make_button("PAVILHÃO DAS FORMAS", Vector2(116, 448), Vector2(392, 68))
 	cultivation_button = make_button("NÚCLEO DE CULTIVO", Vector2(116, 532), Vector2(392, 68))
-	daily_button = make_button("RECEBER ESSÊNCIA DIÁRIA", Vector2(116, 616), Vector2(392, 66))
+	daily_button = make_button("RECEBER ESSÊNCIA DIÁRIA", Vector2(116, 612), Vector2(392, 62))
+	help_button = make_button("COMO JOGAR", Vector2(166, 690), Vector2(292, 56))
 	daily_button.add_theme_font_size_override("font_size", 18)
+	help_button.add_theme_font_size_override("font_size", 17)
 	start_button.pressed.connect(start_game)
 	shop_button.pressed.connect(show_shop)
 	cultivation_button.pressed.connect(show_cultivation)
 	daily_button.pressed.connect(claim_daily_reward)
-	for node in [title_label, subtitle_label, best_label, start_button, shop_button, cultivation_button, daily_button]:
+	help_button.pressed.connect(show_tutorial)
+	for node in [title_label, subtitle_label, best_label, start_button, shop_button, cultivation_button, daily_button, help_button]:
 		menu_card.add_child(node)
 
 	# Resultado
@@ -342,10 +401,10 @@ func build_ui() -> void:
 	result_title = make_label("FLUXO INTERROMPIDO", 38, Vector2(0, 48), C_PEARL)
 	result_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	result_title.size = Vector2(604, 70)
-	result_stats = make_label("", 18, Vector2(56, 130), Color(0.86, 0.96, 1.0, 1.0))
-	result_stats.size = Vector2(492, 475)
-	restart_button = make_button("CULTIVAR NOVAMENTE", Vector2(92, 660), Vector2(420, 76))
-	menu_button = make_button("VOLTAR À TRILHA", Vector2(132, 758), Vector2(340, 68))
+	result_stats = make_label("", 16, Vector2(52, 118), Color(0.86, 0.96, 1.0, 1.0))
+	result_stats.size = Vector2(504, 520)
+	restart_button = make_button("CULTIVAR NOVAMENTE", Vector2(92, 692), Vector2(420, 74))
+	menu_button = make_button("VOLTAR À TRILHA", Vector2(132, 788), Vector2(340, 66))
 	restart_button.pressed.connect(start_game)
 	menu_button.pressed.connect(show_menu)
 	for node in [result_title, result_stats, restart_button, menu_button]:
@@ -390,6 +449,22 @@ func build_ui() -> void:
 	cultivation_close_button = make_button("VOLTAR", Vector2(162, 930), Vector2(300, 70))
 	cultivation_close_button.pressed.connect(show_menu)
 	cultivation_card.add_child(cultivation_close_button)
+
+	# Tutorial / Como jogar
+	tutorial_card = make_panel(Vector2(48, 118), Vector2(624, 980), Color(0.03, 0.11, 0.19, 0.78), Color(C_CELESTIAL.r, C_CELESTIAL.g, C_CELESTIAL.b, 0.30))
+	tutorial_layer.add_child(tutorial_card)
+	tutorial_title = make_label("COMO CULTIVAR NA TRILHA", 34, Vector2(0, 42), C_PEARL)
+	tutorial_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	tutorial_title.size = Vector2(624, 70)
+	tutorial_text = make_label("", 22, Vector2(54, 135), Color(0.84, 0.96, 1.0, 0.96))
+	tutorial_text.size = Vector2(516, 650)
+	tutorial_text.text = "• Arraste para esquerda/direita para trocar de faixa.\n\n• Toque para usar o Passo Espiritual.\n\n• Passe perto dos obstáculos para gerar Ressonância Perfeita.\n\n• Encha a Ressonância para entrar no Estado de Fluxo.\n\n• Cristais raros valem mais e ajudam sua progressão.\n\n• Cada corrida rende cristais, XP e missões para fortalecer seu Núcleo de Cultivo."
+	tutorial_close_button = make_button("ENTENDI", Vector2(162, 825), Vector2(300, 72))
+	tutorial_close_button.pressed.connect(close_tutorial)
+	tutorial_card.add_child(tutorial_title)
+	tutorial_card.add_child(tutorial_text)
+	tutorial_card.add_child(tutorial_close_button)
+	tutorial_layer.visible = false
 
 	# Tela de pausa
 	pause_card = make_panel(Vector2(72, 305), Vector2(576, 515), Color(0.03, 0.11, 0.19, 0.76), Color(C_JADE.r, C_JADE.g, C_JADE.b, 0.30))
@@ -575,6 +650,7 @@ func start_game() -> void:
 	shop_layer.visible = false
 	pause_layer.visible = false
 	cultivation_layer.visible = false
+	tutorial_layer.visible = false
 	hud_layer.visible = true
 	entities.clear()
 	particles.clear()
@@ -586,6 +662,10 @@ func start_game() -> void:
 	flow_activations = 0
 	run_mission_bonus = 0
 	completed_run_missions.clear()
+	current_biome_index = 0
+	rare_crystals_run = 0
+	crystal_rain_timer = 11.0
+	crystal_rain_active = 0.0
 	player_lane = 1
 	target_x = screen_lane_x(player_lane)
 	player.position = Vector2(target_x, PLAYER_Y)
@@ -620,6 +700,7 @@ func show_menu() -> void:
 	shop_layer.visible = false
 	pause_layer.visible = false
 	cultivation_layer.visible = false
+	tutorial_layer.visible = false
 	hud_layer.visible = false
 	best_label.text = "%s  •  XP %d\nMarca: %d m  •  Cristais: %d" % [get_cultivation_stage_name(), cultivation_xp, int(best_distance), total_crystals]
 	update_daily_button()
@@ -634,6 +715,7 @@ func pause_game() -> void:
 	result_layer.visible = false
 	shop_layer.visible = false
 	cultivation_layer.visible = false
+	tutorial_layer.visible = false
 
 func resume_game() -> void:
 	if screen != "pause":
@@ -657,6 +739,21 @@ func activate_flow_state() -> void:
 		var particle_pos: Vector2 = player.position + Vector2(rng.randf_range(-72.0, 72.0), rng.randf_range(-64.0, 64.0))
 		spawn_particle(particle_pos, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.82), 7, 0.58)
 
+func show_tutorial() -> void:
+	screen = "tutorial"
+	menu_layer.visible = false
+	result_layer.visible = false
+	shop_layer.visible = false
+	pause_layer.visible = false
+	cultivation_layer.visible = false
+	hud_layer.visible = false
+	tutorial_layer.visible = true
+
+func close_tutorial() -> void:
+	tutorial_seen = true
+	save_game()
+	show_menu()
+
 func show_cultivation() -> void:
 	screen = "cultivation"
 	menu_layer.visible = false
@@ -664,6 +761,7 @@ func show_cultivation() -> void:
 	shop_layer.visible = false
 	pause_layer.visible = false
 	cultivation_layer.visible = true
+	tutorial_layer.visible = false
 	hud_layer.visible = false
 	update_cultivation_ui()
 
@@ -763,6 +861,7 @@ func show_shop() -> void:
 	shop_layer.visible = true
 	pause_layer.visible = false
 	cultivation_layer.visible = false
+	tutorial_layer.visible = false
 	hud_layer.visible = false
 	update_shop_ui()
 
@@ -854,11 +953,64 @@ func claim_daily_reward() -> void:
 	show_status("+180 ESSÊNCIA DIÁRIA", C_GOLD)
 	spawn_shockwave(player.position, C_GOLD, 40.0, 250.0, 0.65)
 
+func get_biome_index_for_distance(value: float) -> int:
+	var idx: int = 0
+	for i in range(BIOMES.size()):
+		var biome: Dictionary = BIOMES[i]
+		if value >= float(biome["at"]):
+			idx = i
+	return idx
+
+func get_current_biome() -> Dictionary:
+	return BIOMES[current_biome_index]
+
+func get_biome_accent() -> Color:
+	var biome: Dictionary = get_current_biome()
+	return biome["accent"]
+
+func update_biome_state() -> void:
+	var next_index: int = get_biome_index_for_distance(distance)
+	if next_index != current_biome_index:
+		current_biome_index = next_index
+		var biome: Dictionary = get_current_biome()
+		show_status(str(biome["name"]).to_upper(), biome["accent"])
+		flash_alpha = maxf(flash_alpha, 0.13)
+		spawn_shockwave(player.position, biome["accent"], 48.0, 260.0, 0.70)
+
+func start_crystal_rain() -> void:
+	crystal_rain_active = 4.8
+	crystal_rain_timer = rng.randf_range(18.0, 28.0)
+	show_status("CHUVA DE CRISTAIS", C_GOLD)
+	flash_alpha = maxf(flash_alpha, 0.12)
+	spawn_shockwave(player.position, C_GOLD, 52.0, 280.0, 0.74)
+
+func get_next_unlock_hint() -> String:
+	var cheapest_name: String = ""
+	var cheapest_price: int = 999999
+	for skin_id in SKINS.keys():
+		if bool(owned_skins.get(skin_id, false)):
+			continue
+		var data: Dictionary = SKINS[skin_id]
+		var price: int = int(data["price"])
+		if price < cheapest_price:
+			cheapest_price = price
+			cheapest_name = str(data["name"])
+	if cheapest_name == "":
+		return "Todas as formas principais foram despertas."
+	var missing: int = max(0, cheapest_price - total_crystals)
+	return "Próxima forma: %s  •  faltam %d cristais" % [cheapest_name, missing]
+
 func update_game(delta: float, real_delta: float) -> void:
 	run_time += real_delta
 	difficulty += real_delta * 0.018
 	speed = minf(820.0, 390.0 + distance * 0.03 + difficulty * 42.0)
 	distance += speed * delta * 0.045
+	update_biome_state()
+	crystal_rain_timer -= real_delta
+	if crystal_rain_active > 0.0:
+		crystal_rain_active = maxf(0.0, crystal_rain_active - real_delta)
+	elif crystal_rain_timer <= 0.0 and distance > 350.0:
+		start_crystal_rain()
 	var flow_multiplier: float = 1.65 if flow_timer > 0.0 else 1.0
 	score += int(14.0 * delta * (1.0 + float(combo) * 0.08) * flow_multiplier)
 	if flow_timer > 0.0:
@@ -905,7 +1057,10 @@ func update_game(delta: float, real_delta: float) -> void:
 		spawn_timer = maxf(0.38, 1.05 - difficulty * 0.025 - distance * 0.0008)
 	if crystal_spawn_timer <= 0.0:
 		spawn_crystal_line()
-		crystal_spawn_timer = rng.randf_range(0.35, 0.72)
+		if crystal_rain_active > 0.0:
+			crystal_spawn_timer = rng.randf_range(0.12, 0.24)
+		else:
+			crystal_spawn_timer = rng.randf_range(0.35, 0.72)
 	if power_spawn_timer <= 0.0:
 		spawn_powerup()
 		power_spawn_timer = rng.randf_range(7.0, 12.0)
@@ -918,6 +1073,9 @@ func update_hud() -> void:
 	crystal_label.text = str(crystals_run)
 	distance_label.text = "%d m" % int(distance)
 	hud_best_label.text = "Ascensão %d m" % int(best_distance)
+	var biome: Dictionary = get_current_biome()
+	biome_label.text = str(biome["name"])
+	biome_label.add_theme_color_override("font_color", biome["accent"])
 	combo_label.text = "x%d" % max(combo, 1)
 	var dash_ready: bool = dash_cooldown <= 0.0
 	if flow_timer > 0.0:
@@ -960,7 +1118,7 @@ func do_dash() -> void:
 			spawn_particle(particle_pos, Color(C_JADE.r, C_JADE.g, C_JADE.b, 0.80), 7, 0.55)
 
 func spawn_obstacle_pattern() -> void:
-	var pattern: int = rng.randi_range(0, 4)
+	var pattern: int = rng.randi_range(0, 6)
 	if pattern == 0:
 		spawn_obstacle(rng.randi_range(0, 2), "fragmento_caido")
 	elif pattern == 1:
@@ -973,6 +1131,12 @@ func spawn_obstacle_pattern() -> void:
 		spawn_obstacle(2, "selo_instavel")
 	elif pattern == 3:
 		spawn_obstacle(rng.randi_range(0, 2), "ruptura_celestial")
+	elif pattern == 4:
+		spawn_obstacle(rng.randi_range(0, 2), "corrente_qi")
+	elif pattern == 5:
+		var first: int = rng.randi_range(0, 2)
+		spawn_obstacle(first, "portal_quebrado")
+		spawn_obstacle((first + 1) % 3, "fragmento_caido")
 	else:
 		spawn_obstacle(rng.randi_range(0, 2), "fragmento_caido")
 		spawn_obstacle(rng.randi_range(0, 2), "espinho_cristal")
@@ -991,19 +1155,25 @@ func spawn_obstacle(lane: int, kind: String) -> void:
 	entities.append(obstacle)
 
 func spawn_crystal_line() -> void:
-	var lane: int = rng.randi_range(0, 2)
-	var count: int = rng.randi_range(3, 6)
-	for i in range(count):
-		var crystal: Dictionary = {
-			"type": "crystal",
-			"kind": "espiritual",
-			"lane": lane,
-			"pos": Vector2(screen_lane_x(lane), -80.0 - float(i) * 72.0),
-			"radius": 28.0,
-			"value": 1,
-			"rot": rng.randf_range(0.0, TAU)
-		}
-		entities.append(crystal)
+	var lanes_to_spawn: int = 2 if crystal_rain_active > 0.0 else 1
+	for line_index in range(lanes_to_spawn):
+		var lane: int = rng.randi_range(0, 2)
+		var count: int = rng.randi_range(4, 7) if crystal_rain_active > 0.0 else rng.randi_range(3, 6)
+		for i in range(count):
+			var rare_chance: float = 0.055 + float(current_biome_index) * 0.012
+			if crystal_rain_active > 0.0:
+				rare_chance += 0.10
+			var is_rare: bool = rng.randf() < rare_chance
+			var crystal: Dictionary = {
+				"type": "crystal",
+				"kind": "raro" if is_rare else "espiritual",
+				"lane": lane,
+				"pos": Vector2(screen_lane_x(lane), -80.0 - float(i) * 72.0 - float(line_index) * 36.0),
+				"radius": 34.0 if is_rare else 28.0,
+				"value": 6 if is_rare else 1,
+				"rot": rng.randf_range(0.0, TAU)
+			}
+			entities.append(crystal)
 
 func spawn_powerup() -> void:
 	var kinds: Array[String] = ["magnet", "shield", "slowmo", "double"]
@@ -1065,13 +1235,19 @@ func collect_crystal(e: Dictionary) -> void:
 	if flow_timer > 0.0:
 		multiplier += 1
 	var value: int = int(e.get("value", 1))
+	var is_rare: bool = str(e.get("kind", "espiritual")) == "raro"
+	if is_rare:
+		rare_crystals_run += 1
 	crystals_run += value * multiplier
-	score += 30 * multiplier
+	score += (90 if is_rare else 30) * multiplier
 	combo += 1
 	combo_pop_timer = 1.0
-	resonance_value = minf(100.0, resonance_value + 0.8)
+	resonance_value = minf(100.0, resonance_value + (3.8 if is_rare else 0.8))
 	var crystal_pos: Vector2 = e["pos"]
-	spawn_particle(crystal_pos, Color(C_CELESTIAL.r, C_CELESTIAL.g, C_CELESTIAL.b, 0.85), 13, 0.5)
+	var particle_color: Color = C_GOLD if is_rare else get_biome_accent()
+	spawn_particle(crystal_pos, Color(particle_color.r, particle_color.g, particle_color.b, 0.85), 18 if is_rare else 13, 0.58 if is_rare else 0.5)
+	if is_rare:
+		spawn_shockwave(crystal_pos, C_GOLD, 18.0, 92.0, 0.38)
 	if combo % 10 == 0:
 		spawn_shockwave(player.position, C_GOLD, 22.0, 118.0, 0.46)
 		show_status("Fluxo x%d" % combo, C_GOLD)
@@ -1123,12 +1299,18 @@ func calculate_run_missions() -> Array[String]:
 		missions.append("✓ Entrou em Estado de Fluxo")
 	if combo >= 18:
 		missions.append("✓ Sustentou Fluxo x18")
+	if rare_crystals_run >= 3:
+		missions.append("✓ Coletou 3 Cristais Raros")
+	if current_biome_index >= 1:
+		missions.append("✓ Alcançou o Vale de Jade")
 	return missions
 
 func calculate_xp_gain() -> int:
 	var gain: int = int(distance * 0.06)
 	gain += perfect_grazes * 9
 	gain += flow_activations * 24
+	gain += rare_crystals_run * 12
+	gain += current_biome_index * 30
 	gain += completed_run_missions.size() * 18
 	gain += int(max(combo, 1) * 0.8)
 	return max(gain, 8)
@@ -1148,11 +1330,13 @@ func game_over() -> void:
 	shop_layer.visible = false
 	pause_layer.visible = false
 	cultivation_layer.visible = false
+	tutorial_layer.visible = false
 	var new_mark: String = "\nNova Marca de Ascensão!" if int(distance) >= int(best_distance) else ""
 	var mission_text: String = "Nenhuma missão concluída"
 	if completed_run_missions.size() > 0:
 		mission_text = "\n".join(completed_run_missions)
-	result_stats.text = "Distância: %d m\nPontuação: %d\nCristais da Corrida: %d\nBônus de Missões: +%d\nXP de Cultivo: +%d\nRessonâncias Perfeitas: %d\nEstados de Fluxo: %d\nMaior Fluxo: x%d\n%s\n\nMissões:\n%s\n\nEstágio: %s\nTotal de Cristais: %d\nMarca de Ascensão: %d m" % [int(distance), score, crystals_run, run_mission_bonus, last_xp_gain, perfect_grazes, flow_activations, max(combo, 1), new_mark, mission_text, get_cultivation_stage_name(), total_crystals, int(best_distance)]
+	var biome_reached: String = str(get_current_biome()["name"])
+	result_stats.text = "Distância: %d m\nBioma: %s\nPontuação: %d\nCristais: %d  •  Raros: %d\nBônus de Missões: +%d\nXP de Cultivo: +%d\nRessonâncias Perfeitas: %d\nEstados de Fluxo: %d\nMaior Fluxo: x%d\n%s\n\nMissões:\n%s\n\n%s\nEstágio: %s\nTotal de Cristais: %d\nMarca de Ascensão: %d m" % [int(distance), biome_reached, score, crystals_run, rare_crystals_run, run_mission_bonus, last_xp_gain, perfect_grazes, flow_activations, max(combo, 1), new_mark, mission_text, get_next_unlock_hint(), get_cultivation_stage_name(), total_crystals, int(best_distance)]
 	camera_shake = 17.0
 
 func show_status(text: String, color: Color) -> void:
@@ -1270,6 +1454,7 @@ func save_game() -> void:
 		"selected_skin": selected_skin,
 		"owned_skins": owned_skins,
 		"last_daily_reward": last_daily_reward,
+		"tutorial_seen": tutorial_seen,
 		"cultivation_xp": cultivation_xp,
 		"technique_levels": technique_levels
 	}
@@ -1288,7 +1473,9 @@ func load_save() -> void:
 			total_crystals = int(parsed.get("total_crystals", 0))
 			selected_skin = str(parsed.get("selected_skin", "nucleo_errante"))
 			last_daily_reward = str(parsed.get("last_daily_reward", ""))
+			tutorial_seen = bool(parsed.get("tutorial_seen", false))
 			cultivation_xp = int(parsed.get("cultivation_xp", 0))
+			tutorial_seen = bool(parsed.get("tutorial_seen", false))
 			var loaded_techniques: Variant = parsed.get("technique_levels", {"dash": 0, "jade": 0, "flow": 0})
 			if typeof(loaded_techniques) == TYPE_DICTIONARY:
 				technique_levels = loaded_techniques
@@ -1304,6 +1491,7 @@ func load_save() -> void:
 
 func _draw() -> void:
 	draw_cultivation_background()
+	draw_biome_overlay()
 	draw_premium_menu_glow()
 	draw_spiritual_lanes()
 	draw_speed_lines()
@@ -1313,6 +1501,28 @@ func _draw() -> void:
 	draw_shockwaves()
 	draw_player_aura()
 	draw_flash_overlay()
+
+func draw_biome_overlay() -> void:
+	var biome: Dictionary = get_current_biome()
+	var accent: Color = biome["accent"]
+	var secondary: Color = biome["secondary"]
+	if current_biome_index >= 1:
+		draw_rect(Rect2(Vector2.ZERO, Vector2(VIEW_W, VIEW_H)), Color(accent.r, accent.g, accent.b, 0.018 + float(current_biome_index) * 0.010))
+	if crystal_rain_active > 0.0:
+		var rain_alpha: float = 0.05 + 0.025 * sin(pulse_time * 8.0)
+		draw_rect(Rect2(Vector2.ZERO, Vector2(VIEW_W, VIEW_H)), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, rain_alpha))
+		for i in range(12):
+			var x: float = fmod(float(i) * 71.0 + pulse_time * 95.0, VIEW_W + 90.0) - 45.0
+			var y: float = fmod(float(i) * 131.0 + pulse_time * 230.0, VIEW_H + 160.0) - 80.0
+			draw_line(Vector2(x, y), Vector2(x - 26.0, y + 54.0), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.15), 2.0)
+	if current_biome_index == 2:
+		for i in range(3):
+			var p: Vector2 = Vector2(120.0 + float(i) * 210.0, 190.0 + sin(pulse_time * 0.4 + float(i)) * 18.0)
+			draw_arc(p, 62.0, pulse_time * 0.2, pulse_time * 0.2 + PI * 1.35, 64, Color(secondary.r, secondary.g, secondary.b, 0.065), 3.0, true)
+	elif current_biome_index == 3:
+		var gate_center: Vector2 = Vector2(VIEW_W * 0.5, 210.0)
+		draw_arc(gate_center, 155.0, PI * 1.05, PI * 1.95, 96, Color(accent.r, accent.g, accent.b, 0.16), 5.0, true)
+		draw_circle(gate_center, 84.0, Color(secondary.r, secondary.g, secondary.b, 0.035))
 
 func draw_premium_menu_glow() -> void:
 	if screen != "menu":
@@ -1381,16 +1591,20 @@ func draw_flash_overlay() -> void:
 		draw_rect(Rect2(Vector2(VIEW_W - 8.0, 0.0), Vector2(8.0, VIEW_H)), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, edge_alpha))
 
 func draw_cultivation_background() -> void:
-	draw_rect(Rect2(Vector2.ZERO, Vector2(VIEW_W, VIEW_H)), C_DEEP_SKY)
+	var biome: Dictionary = get_current_biome()
+	var deep_color: Color = biome["deep"]
+	var mist_color: Color = biome["mist"]
+	var accent_color: Color = biome["accent"]
+	draw_rect(Rect2(Vector2.ZERO, Vector2(VIEW_W, VIEW_H)), deep_color)
 	for y in range(0, int(VIEW_H), 64):
 		var t: float = float(y) / VIEW_H
 		var alpha_layer: float = 0.10 + 0.06 * sin((float(y) + pulse_time * 34.0) * 0.01)
-		var layer_color: Color = C_DEEP_SKY_2.lerp(C_NEBULA, t * 0.32)
+		var layer_color: Color = mist_color.lerp(accent_color, t * 0.20)
 		layer_color.a = alpha_layer
 		draw_rect(Rect2(0.0, float(y), VIEW_W, 64.0), layer_color)
 
 	var moon_pos: Vector2 = Vector2(VIEW_W * 0.78, 155.0 + sin(pulse_time * 0.18) * 8.0)
-	draw_circle(moon_pos, 92.0, Color(C_CELESTIAL.r, C_CELESTIAL.g, C_CELESTIAL.b, 0.045))
+	draw_circle(moon_pos, 92.0, Color(accent_color.r, accent_color.g, accent_color.b, 0.045))
 	draw_circle(moon_pos, 54.0, Color(0.88, 0.98, 1.0, 0.11))
 	draw_circle(moon_pos + Vector2(10.0, -4.0), 40.0, Color(0.94, 1.0, 1.0, 0.13))
 
@@ -1400,13 +1614,13 @@ func draw_cultivation_background() -> void:
 		var mw: float = float(mountain["w"])
 		var mh: float = float(mountain["h"])
 		var ma: float = float(mountain["alpha"])
-		draw_floating_mountain(Vector2(mx, my), mw, mh, Color(0.45, 0.86, 0.95, ma))
+		draw_floating_mountain(Vector2(mx, my), mw, mh, Color(accent_color.r, accent_color.g, accent_color.b, ma))
 
 	for s in stars:
 		var star_pos: Vector2 = s["pos"]
 		var star_size: float = float(s["size"])
 		var star_alpha: float = float(s["alpha"])
-		draw_circle(star_pos, star_size, Color(0.70, 0.94, 1.0, star_alpha))
+		draw_circle(star_pos, star_size, Color(accent_color.r, accent_color.g, accent_color.b, star_alpha))
 
 	for qi in qi_particles:
 		var qi_pos: Vector2 = qi["pos"]
@@ -1428,7 +1642,8 @@ func draw_floating_mountain(base: Vector2, w: float, h: float, color: Color) -> 
 	draw_polyline(PackedVector2Array([pts[0], pts[1], pts[2], pts[3], pts[4]]), Color(C_PEARL.r, C_PEARL.g, C_PEARL.b, color.a * 0.50), 1.5)
 
 func draw_spiritual_lanes() -> void:
-	var path_color: Color = Color(C_CELESTIAL.r, C_CELESTIAL.g, C_CELESTIAL.b, 0.08)
+	var lane_accent: Color = get_biome_accent()
+	var path_color: Color = Color(lane_accent.r, lane_accent.g, lane_accent.b, 0.08)
 	var flow_alpha: float = 0.10 + 0.05 * sin(pulse_time * 1.8)
 	draw_polygon(PackedVector2Array([
 		Vector2(70.0, VIEW_H),
@@ -1439,7 +1654,7 @@ func draw_spiritual_lanes() -> void:
 	for lane_offset in LANES:
 		var x: float = VIEW_W * 0.5 + lane_offset
 		draw_line(Vector2(x, 0.0), Vector2(x, VIEW_H), path_color, 4.0)
-		draw_line(Vector2(x, 0.0), Vector2(x, VIEW_H), Color(C_JADE.r, C_JADE.g, C_JADE.b, flow_alpha * 0.32), 1.4)
+		draw_line(Vector2(x, 0.0), Vector2(x, VIEW_H), Color(lane_accent.r, lane_accent.g, lane_accent.b, flow_alpha * 0.38), 1.4)
 	for i in range(9):
 		var y: float = fmod(pulse_time * 95.0 + float(i) * 155.0, VIEW_H + 160.0) - 80.0
 		draw_arc(Vector2(VIEW_W * 0.5, y), 220.0, PI * 0.05, PI * 0.95, 42, Color(C_CELESTIAL.r, C_CELESTIAL.g, C_CELESTIAL.b, 0.055), 2.0, true)
@@ -1450,7 +1665,11 @@ func draw_entities() -> void:
 		var p: Vector2 = e["pos"]
 		var rot: float = float(e.get("rot", 0.0))
 		if entity_type == "crystal":
-			draw_crystal(p, 22.0, C_CELESTIAL, rot)
+			var crystal_kind: String = str(e.get("kind", "espiritual"))
+			if crystal_kind == "raro":
+				draw_crystal(p, 28.0, C_GOLD, rot)
+			else:
+				draw_crystal(p, 22.0, get_biome_accent(), rot)
 		elif entity_type == "power":
 			draw_powerup(p, str(e.get("kind", "")), rot)
 		else:
@@ -1531,8 +1750,29 @@ func draw_obstacle_by_kind(p: Vector2, kind: String, rot: float) -> void:
 		draw_obstacle_spike(p, 50.0, Color(C_NEBULA.r, C_NEBULA.g, C_NEBULA.b, 0.90), rot)
 	elif kind == "selo_instavel":
 		draw_unstable_seal(p, rot)
+	elif kind == "corrente_qi":
+		draw_qi_current(p, rot)
+	elif kind == "portal_quebrado":
+		draw_broken_portal(p, rot)
 	else:
 		draw_obstacle_spike(p, 48.0, Color(0.45, 0.88, 0.95, 0.75), rot)
+
+func draw_qi_current(p: Vector2, rot: float) -> void:
+	var accent: Color = get_biome_accent()
+	draw_circle(p, 58.0, Color(accent.r, accent.g, accent.b, 0.12))
+	for i in range(3):
+		var offset: float = -28.0 + float(i) * 28.0
+		var a: Vector2 = p + Vector2(-46.0, offset).rotated(rot)
+		var b: Vector2 = p + Vector2(46.0, -offset).rotated(rot)
+		draw_line(a, b, Color(accent.r, accent.g, accent.b, 0.72), 5.0)
+		draw_line(a + Vector2(0, 7).rotated(rot), b + Vector2(0, 7).rotated(rot), Color(C_PEARL.r, C_PEARL.g, C_PEARL.b, 0.32), 1.8)
+
+func draw_broken_portal(p: Vector2, rot: float) -> void:
+	var accent: Color = get_biome_accent()
+	draw_circle(p, 66.0, Color(C_NEBULA.r, C_NEBULA.g, C_NEBULA.b, 0.14))
+	draw_arc(p, 56.0, rot, rot + PI * 0.78, 40, Color(accent.r, accent.g, accent.b, 0.82), 6.0, true)
+	draw_arc(p, 56.0, rot + PI * 1.10, rot + PI * 1.88, 40, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.66), 6.0, true)
+	draw_line(p + Vector2(-22.0, -22.0).rotated(rot), p + Vector2(26.0, 28.0).rotated(rot), Color(C_PEARL.r, C_PEARL.g, C_PEARL.b, 0.50), 2.2)
 
 func draw_rupture(p: Vector2, rot: float) -> void:
 	draw_circle(p, 62.0, Color(C_NEBULA.r, C_NEBULA.g, C_NEBULA.b, 0.18))
