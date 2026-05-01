@@ -1,0 +1,13 @@
+{
+  "name": "Fragment Rush Godot Workspace",
+  "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "geequlim.godot-tools",
+        "ms-vscode.cpptools"
+      ]
+    }
+  },
+  "postCreateCommand": "echo 'Fragment Rush pronto. Abra este projeto no Godot 4 para executar e exportar.'"
+}
