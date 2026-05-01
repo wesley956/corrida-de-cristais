@@ -1,7 +1,7 @@
 extends Node2D
 
 # Fragment Rush: Corrida dos Cristais
-# v0.9.1 - Biomas + Tutorial + Corrida Viva
+# v1.1.1 - Reboot Visual Menu Pavilhao Nucleo
 # Runner mobile com atmosfera wuxia/cultivation: fluxo, ressonancia e ascensao.
 
 const SAVE_PATH: String = "user://fragment_rush_save.json"
@@ -34,6 +34,7 @@ var shop_layer: CanvasLayer
 var pause_layer: CanvasLayer
 var cultivation_layer: CanvasLayer
 var tutorial_layer: CanvasLayer
+var transition_layer: CanvasLayer
 
 var score_label: Label
 var crystal_label: Label
@@ -52,6 +53,7 @@ var shop_card: Panel
 var pause_card: Panel
 var cultivation_card: Panel
 var tutorial_card: Panel
+var transition_card: Panel
 
 var title_label: Label
 var subtitle_label: Label
@@ -59,17 +61,32 @@ var start_button: Button
 var shop_button: Button
 var close_shop_button: Button
 var shop_info_label: Label
+var shop_title_label: Label
+var shop_preview_name_label: Label
+var shop_preview_meta_label: Label
+var shop_preview_desc_label: Label
+var shop_action_button: Button
 var daily_button: Button
 var cultivation_button: Button
 var help_button: Button
 var shop_skin_buttons: Dictionary = {}
+var selected_shop_skin: String = "nucleo_errante"
 var cultivation_info_label: Label
+var cultivation_stage_label: Label
+var cultivation_next_circle_label: Label
 var cultivation_close_button: Button
 var cultivation_upgrade_buttons: Dictionary = {}
 var tutorial_title: Label
 var tutorial_text: Label
 var tutorial_close_button: Button
 var biome_label: Label
+var transition_label: Label
+var transition_subtitle: Label
+var result_summary_label: Label
+var result_xp_label: Label
+var result_xp_bar: ProgressBar
+var result_form_label: Label
+var result_form_bar: ProgressBar
 
 var result_title: Label
 var result_stats: Label
@@ -115,6 +132,7 @@ var cultivation_xp: int = 0
 var tutorial_seen: bool = false
 var current_biome_index: int = 0
 var rare_crystals_run: int = 0
+var circles_unlocked_run: int = 0
 var crystal_rain_timer: float = 11.0
 var crystal_rain_active: float = 0.0
 var last_xp_gain: int = 0
@@ -140,6 +158,39 @@ const CULTIVATION_STAGES: Array[String] = [
 	"Núcleo Refinado",
 	"Fluxo Celestial",
 	"Ascensão Cristalina"
+]
+
+const RESONANCE_CIRCLES: Array = [
+	{
+		"name": "Círculo Ciano",
+		"xp": 500,
+		"color": Color(0.322, 0.902, 1.0, 1.0),
+		"effect": "+Ressonância ao coletar cristais"
+	},
+	{
+		"name": "Círculo de Jade",
+		"xp": 1400,
+		"color": Color(0.384, 0.949, 0.706, 1.0),
+		"effect": "+Alcance do Chamado do Jade"
+	},
+	{
+		"name": "Círculo Nebular",
+		"xp": 3000,
+		"color": Color(0.541, 0.361, 1.0, 1.0),
+		"effect": "+Bônus em Ressonância Perfeita"
+	},
+	{
+		"name": "Círculo Dourado",
+		"xp": 6000,
+		"color": Color(1.0, 0.851, 0.502, 1.0),
+		"effect": "+Valor dos Cristais Raros"
+	},
+	{
+		"name": "Círculo Celestial",
+		"xp": 10000,
+		"color": Color(0.918, 0.984, 1.0, 1.0),
+		"effect": "+Duração do Estado de Fluxo"
+	}
 ]
 
 const BIOMES: Array = [
@@ -193,6 +244,8 @@ var combo_pop_timer: float = 0.0
 var title_breathe: float = 0.0
 var flow_timer: float = 0.0
 var flow_activations: int = 0
+var run_countdown: float = 0.0
+var result_reveal_timer: float = 0.0
 
 func _ready() -> void:
 	rng.randomize()
@@ -217,10 +270,15 @@ func _process(delta: float) -> void:
 	update_background(real_delta)
 	update_particles(real_delta)
 	update_impact_fx(real_delta)
-	if screen == "game":
+	if screen == "countdown":
+		update_countdown(real_delta)
+	elif screen == "game":
 		update_game(game_delta, real_delta)
-	elif screen != "pause":
-		update_menu_motion(real_delta)
+	elif screen == "result":
+		update_result_motion(real_delta)
+	else:
+		if screen != "pause":
+			update_menu_motion(real_delta)
 	update_screen_shake(real_delta)
 	queue_redraw()
 
@@ -312,44 +370,46 @@ func build_ui() -> void:
 	add_child(cultivation_layer)
 	tutorial_layer = CanvasLayer.new()
 	add_child(tutorial_layer)
+	transition_layer = CanvasLayer.new()
+	add_child(transition_layer)
 
 	# HUD - glassmorphism espiritual
-	var hud_left_panel: Panel = make_panel(Vector2(22, 22), Vector2(205, 96), Color(0.03, 0.12, 0.20, 0.72), Color(C_CELESTIAL.r, C_CELESTIAL.g, C_CELESTIAL.b, 0.26))
-	var hud_center_panel: Panel = make_panel(Vector2(237, 22), Vector2(246, 96), Color(0.03, 0.12, 0.20, 0.76), Color(C_PEARL.r, C_PEARL.g, C_PEARL.b, 0.20))
-	var hud_right_panel: Panel = make_panel(Vector2(493, 22), Vector2(205, 96), Color(0.03, 0.12, 0.20, 0.72), Color(C_JADE.r, C_JADE.g, C_JADE.b, 0.26))
-	var resonance_panel: Panel = make_panel(Vector2(22, 130), Vector2(676, 56), Color(0.02, 0.11, 0.17, 0.70), Color(C_JADE.r, C_JADE.g, C_JADE.b, 0.22))
+	var hud_left_panel: Panel = make_panel(Vector2(22, 22), Vector2(188, 82), Color(0.03, 0.12, 0.20, 0.72), Color(C_CELESTIAL.r, C_CELESTIAL.g, C_CELESTIAL.b, 0.26))
+	var hud_center_panel: Panel = make_panel(Vector2(226, 22), Vector2(268, 82), Color(0.03, 0.12, 0.20, 0.76), Color(C_PEARL.r, C_PEARL.g, C_PEARL.b, 0.20))
+	var hud_right_panel: Panel = make_panel(Vector2(510, 22), Vector2(188, 82), Color(0.03, 0.12, 0.20, 0.72), Color(C_JADE.r, C_JADE.g, C_JADE.b, 0.26))
+	var resonance_panel: Panel = make_panel(Vector2(86, 118), Vector2(548, 48), Color(0.02, 0.11, 0.17, 0.70), Color(C_JADE.r, C_JADE.g, C_JADE.b, 0.22))
 	for panel in [hud_left_panel, hud_center_panel, hud_right_panel, resonance_panel]:
 		hud_layer.add_child(panel)
 
 	var hud_left_title: Label = make_label("Cristais", 16, Vector2(14, 10), Color(0.73, 0.94, 1.0, 0.90))
-	crystal_label = make_label("0", 34, Vector2(14, 24), C_CELESTIAL)
-	score_label = make_label("Pontos 0", 16, Vector2(14, 62), Color(0.86, 0.96, 1.0, 0.86))
+	crystal_label = make_label("0", 32, Vector2(14, 22), C_CELESTIAL)
+	score_label = make_label("Pontos 0", 14, Vector2(14, 55), Color(0.86, 0.96, 1.0, 0.86))
 	hud_left_panel.add_child(hud_left_title)
 	hud_left_panel.add_child(crystal_label)
 	hud_left_panel.add_child(score_label)
 
 	var hud_center_title: Label = make_label("Marca atual", 16, Vector2(0, 10), Color(0.80, 0.95, 1.0, 0.84))
-	hud_center_title.size = Vector2(246, 24)
+	hud_center_title.size = Vector2(268, 22)
 	hud_center_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	distance_label = make_label("0 m", 30, Vector2(0, 24), C_PEARL)
-	distance_label.size = Vector2(246, 34)
+	distance_label = make_label("0 m", 30, Vector2(0, 21), C_PEARL)
+	distance_label.size = Vector2(268, 34)
 	distance_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	hud_best_label = make_label("Ascensão 0 m", 15, Vector2(0, 62), Color(0.72, 0.90, 1.0, 0.80))
-	hud_best_label.size = Vector2(246, 22)
+	hud_best_label = make_label("Ascensão 0 m", 14, Vector2(0, 55), Color(0.72, 0.90, 1.0, 0.80))
+	hud_best_label.size = Vector2(268, 22)
 	hud_best_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	hud_center_panel.add_child(hud_center_title)
 	hud_center_panel.add_child(distance_label)
 	hud_center_panel.add_child(hud_best_label)
 
 	var hud_right_title: Label = make_label("Fluxo", 16, Vector2(14, 10), Color(0.78, 0.98, 0.90, 0.88))
-	combo_label = make_label("x1", 32, Vector2(14, 22), C_GOLD)
-	dash_label = make_label("Passo pronto", 16, Vector2(14, 62), Color(0.76, 0.98, 0.86, 0.84))
+	combo_label = make_label("x1", 32, Vector2(14, 20), C_GOLD)
+	dash_label = make_label("Passo pronto", 14, Vector2(14, 55), Color(0.76, 0.98, 0.86, 0.84))
 	hud_right_panel.add_child(hud_right_title)
 	hud_right_panel.add_child(combo_label)
 	hud_right_panel.add_child(dash_label)
 
 	resonance_label = make_label("Ressonância", 16, Vector2(16, 8), Color(0.86, 0.98, 0.90, 0.90))
-	resonance_bar = make_progress_bar(Vector2(16, 28), Vector2(644, 16))
+	resonance_bar = make_progress_bar(Vector2(16, 26), Vector2(516, 14))
 	resonance_panel.add_child(resonance_label)
 	resonance_panel.add_child(resonance_bar)
 
@@ -358,33 +418,33 @@ func build_ui() -> void:
 	status_label.size = Vector2(VIEW_W, 70)
 	hud_layer.add_child(status_label)
 
-	pause_button = make_button("Ⅱ", Vector2(644, 198), Vector2(54, 52))
+	pause_button = make_button("Ⅱ", Vector2(645, 180), Vector2(52, 50))
 	pause_button.add_theme_font_size_override("font_size", 22)
 	pause_button.pressed.connect(pause_game)
 	hud_layer.add_child(pause_button)
 
-	biome_label = make_label("", 17, Vector2(0, 252), Color(0.82, 0.96, 1.0, 0.86))
+	biome_label = make_label("", 16, Vector2(0, 208), Color(0.82, 0.96, 1.0, 0.86))
 	biome_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	biome_label.size = Vector2(VIEW_W, 34)
 	hud_layer.add_child(biome_label)
 
 	# Menu principal
-	menu_card = make_panel(Vector2(48, 150), Vector2(624, 730), Color(0.03, 0.11, 0.19, 0.62), Color(C_CELESTIAL.r, C_CELESTIAL.g, C_CELESTIAL.b, 0.22))
+	menu_card = make_panel(Vector2(48, 132), Vector2(624, 790), Color(0.02, 0.08, 0.14, 0.38), Color(C_CELESTIAL.r, C_CELESTIAL.g, C_CELESTIAL.b, 0.22))
 	menu_layer.add_child(menu_card)
-	title_label = make_label("FRAGMENT RUSH\nCorrida dos Cristais", 44, Vector2(0, 48), C_PEARL)
+	title_label = make_label("FRAGMENT RUSH\nCorrida dos Cristais", 43, Vector2(0, 46), C_PEARL)
 	title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title_label.size = Vector2(624, 118)
-	subtitle_label = make_label("Cultive o fluxo. Atravesse o céu fragmentado.", 21, Vector2(58, 182), Color(0.78, 0.95, 1.0, 1.0))
+	subtitle_label = make_label("Cultive o fluxo. Atravesse o céu fragmentado.", 20, Vector2(58, 170), Color(0.78, 0.95, 1.0, 1.0))
 	subtitle_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	subtitle_label.size = Vector2(508, 60)
-	best_label = make_label("", 22, Vector2(0, 260), Color(0.74, 0.92, 1.0, 0.92))
+	best_label = make_label("", 18, Vector2(46, 248), Color(0.74, 0.92, 1.0, 0.92))
 	best_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	best_label.size = Vector2(624, 56)
-	start_button = make_button("INICIAR CORRIDA", Vector2(102, 348), Vector2(420, 82))
-	shop_button = make_button("PAVILHÃO DAS FORMAS", Vector2(116, 448), Vector2(392, 68))
-	cultivation_button = make_button("NÚCLEO DE CULTIVO", Vector2(116, 532), Vector2(392, 68))
-	daily_button = make_button("RECEBER ESSÊNCIA DIÁRIA", Vector2(116, 612), Vector2(392, 62))
-	help_button = make_button("COMO JOGAR", Vector2(166, 690), Vector2(292, 56))
+	best_label.size = Vector2(532, 74)
+	start_button = make_button("INICIAR CORRIDA", Vector2(96, 355), Vector2(432, 84))
+	shop_button = make_button("PAVILHÃO", Vector2(72, 470), Vector2(225, 66))
+	cultivation_button = make_button("NÚCLEO", Vector2(327, 470), Vector2(225, 66))
+	daily_button = make_button("ESSÊNCIA DIÁRIA", Vector2(116, 562), Vector2(392, 62))
+	help_button = make_button("COMO JOGAR", Vector2(166, 640), Vector2(292, 56))
 	daily_button.add_theme_font_size_override("font_size", 18)
 	help_button.add_theme_font_size_override("font_size", 17)
 	start_button.pressed.connect(start_game)
@@ -395,58 +455,94 @@ func build_ui() -> void:
 	for node in [title_label, subtitle_label, best_label, start_button, shop_button, cultivation_button, daily_button, help_button]:
 		menu_card.add_child(node)
 
-	# Resultado
-	result_card = make_panel(Vector2(58, 160), Vector2(604, 845), Color(0.03, 0.11, 0.19, 0.68), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.26))
+	# Resultado premium
+	result_card = make_panel(Vector2(48, 118), Vector2(624, 1000), Color(0.03, 0.11, 0.19, 0.72), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.28))
 	result_layer.add_child(result_card)
-	result_title = make_label("FLUXO INTERROMPIDO", 38, Vector2(0, 48), C_PEARL)
+	result_title = make_label("FLUXO INTERROMPIDO", 36, Vector2(0, 34), C_PEARL)
 	result_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	result_title.size = Vector2(604, 70)
-	result_stats = make_label("", 16, Vector2(52, 118), Color(0.86, 0.96, 1.0, 1.0))
-	result_stats.size = Vector2(504, 520)
-	restart_button = make_button("CULTIVAR NOVAMENTE", Vector2(92, 692), Vector2(420, 74))
-	menu_button = make_button("VOLTAR À TRILHA", Vector2(132, 788), Vector2(340, 66))
+	result_title.size = Vector2(624, 64)
+	result_summary_label = make_label("", 28, Vector2(38, 112), C_GOLD)
+	result_summary_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	result_summary_label.size = Vector2(548, 90)
+	result_stats = make_label("", 16, Vector2(48, 218), Color(0.86, 0.96, 1.0, 1.0))
+	result_stats.size = Vector2(528, 305)
+	result_xp_label = make_label("", 18, Vector2(48, 520), Color(0.88, 1.0, 0.92, 0.95))
+	result_xp_label.size = Vector2(528, 34)
+	result_xp_bar = make_progress_bar(Vector2(48, 560), Vector2(528, 18))
+	result_form_label = make_label("", 18, Vector2(48, 600), Color(1.0, 0.90, 0.62, 0.96))
+	result_form_label.size = Vector2(528, 34)
+	result_form_bar = make_progress_bar(Vector2(48, 640), Vector2(528, 18))
+	restart_button = make_button("CULTIVAR NOVAMENTE", Vector2(92, 755), Vector2(440, 76))
+	menu_button = make_button("VOLTAR AO MENU", Vector2(142, 850), Vector2(340, 66))
 	restart_button.pressed.connect(start_game)
 	menu_button.pressed.connect(show_menu)
-	for node in [result_title, result_stats, restart_button, menu_button]:
+	for node in [result_title, result_summary_label, result_stats, result_xp_label, result_xp_bar, result_form_label, result_form_bar, restart_button, menu_button]:
 		result_card.add_child(node)
 
-	# Loja/Pavilhão
-	shop_card = make_panel(Vector2(48, 110), Vector2(624, 1040), Color(0.03, 0.11, 0.19, 0.68), Color(C_JADE.r, C_JADE.g, C_JADE.b, 0.24))
+	# Pavilhão Celestial das Formas — vitrine holográfica
+	shop_card = make_panel(Vector2(34, 76), Vector2(652, 1078), Color(0.02, 0.08, 0.14, 0.42), Color(C_JADE.r, C_JADE.g, C_JADE.b, 0.24))
 	shop_layer.add_child(shop_card)
-	shop_info_label = make_label("", 21, Vector2(40, 34), C_PEARL)
-	shop_info_label.size = Vector2(544, 250)
-	shop_card.add_child(shop_info_label)
+	shop_title_label = make_label("PAVILHÃO CELESTIAL", 32, Vector2(0, 28), C_PEARL)
+	shop_title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	shop_title_label.size = Vector2(652, 58)
+	shop_preview_name_label = make_label("", 30, Vector2(0, 382), C_PEARL)
+	shop_preview_name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	shop_preview_name_label.size = Vector2(652, 52)
+	shop_preview_meta_label = make_label("", 18, Vector2(0, 430), C_GOLD)
+	shop_preview_meta_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	shop_preview_meta_label.size = Vector2(652, 36)
+	shop_preview_desc_label = make_label("", 18, Vector2(70, 470), Color(0.82, 0.96, 1.0, 0.90))
+	shop_preview_desc_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	shop_preview_desc_label.size = Vector2(512, 80)
+	shop_info_label = make_label("", 16, Vector2(54, 84), Color(0.82, 0.96, 1.0, 0.72))
+	shop_info_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	shop_info_label.size = Vector2(544, 46)
+	shop_action_button = make_button("", Vector2(126, 558), Vector2(400, 74))
+	shop_action_button.pressed.connect(activate_selected_shop_skin)
+	for node in [shop_title_label, shop_info_label, shop_preview_name_label, shop_preview_meta_label, shop_preview_desc_label, shop_action_button]:
+		shop_card.add_child(node)
 
 	var skin_order: Array[String] = ["nucleo_errante", "semente_jade", "orbe_celestial", "coracao_nebular", "essencia_dourada"]
 	for i in range(skin_order.size()):
 		var skin_id: String = skin_order[i]
-		var b: Button = make_button("", Vector2(54, 286 + i * 108), Vector2(516, 88))
-		b.add_theme_font_size_override("font_size", 18)
-		b.pressed.connect(func() -> void: buy_or_select_skin(skin_id))
+		var col: int = i % 2
+		var row: int = int(i / 2)
+		var b: Button = make_button("", Vector2(54 + col * 274, 668 + row * 96), Vector2(250, 78))
+		b.add_theme_font_size_override("font_size", 16)
+		b.pressed.connect(func() -> void: select_shop_skin(skin_id))
 		shop_skin_buttons[skin_id] = b
 		shop_card.add_child(b)
 
-	close_shop_button = make_button("VOLTAR", Vector2(162, 930), Vector2(300, 70))
+	close_shop_button = make_button("VOLTAR", Vector2(176, 956), Vector2(300, 66))
 	close_shop_button.pressed.connect(show_menu)
 	shop_card.add_child(close_shop_button)
 
-	# Núcleo de Cultivo
-	cultivation_card = make_panel(Vector2(48, 110), Vector2(624, 1040), Color(0.03, 0.11, 0.19, 0.72), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.26))
+	# Câmara do Núcleo — câmara visual de cultivo
+	cultivation_card = make_panel(Vector2(34, 76), Vector2(652, 1078), Color(0.02, 0.08, 0.14, 0.42), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.24))
 	cultivation_layer.add_child(cultivation_card)
-	cultivation_info_label = make_label("", 21, Vector2(40, 36), C_PEARL)
-	cultivation_info_label.size = Vector2(544, 300)
-	cultivation_card.add_child(cultivation_info_label)
+	cultivation_info_label = make_label("CÂMARA DO NÚCLEO", 32, Vector2(0, 28), C_PEARL)
+	cultivation_info_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	cultivation_info_label.size = Vector2(652, 58)
+	cultivation_stage_label = make_label("", 24, Vector2(0, 420), C_PEARL)
+	cultivation_stage_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	cultivation_stage_label.size = Vector2(652, 76)
+	cultivation_next_circle_label = make_label("", 17, Vector2(72, 498), Color(0.84, 0.96, 1.0, 0.88))
+	cultivation_next_circle_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	cultivation_next_circle_label.size = Vector2(508, 72)
+	for node in [cultivation_info_label, cultivation_stage_label, cultivation_next_circle_label]:
+		cultivation_card.add_child(node)
 
 	var technique_order: Array[String] = ["dash", "jade", "flow"]
 	for i in range(technique_order.size()):
 		var tech_id: String = technique_order[i]
-		var tb: Button = make_button("", Vector2(54, 380 + i * 126), Vector2(516, 96))
-		tb.add_theme_font_size_override("font_size", 18)
+		var tx: float = 54.0 + float(i) * 183.0
+		var tb: Button = make_button("", Vector2(tx, 654), Vector2(166, 128))
+		tb.add_theme_font_size_override("font_size", 15)
 		tb.pressed.connect(func() -> void: upgrade_technique(tech_id))
 		cultivation_upgrade_buttons[tech_id] = tb
 		cultivation_card.add_child(tb)
 
-	cultivation_close_button = make_button("VOLTAR", Vector2(162, 930), Vector2(300, 70))
+	cultivation_close_button = make_button("VOLTAR", Vector2(176, 956), Vector2(300, 66))
 	cultivation_close_button.pressed.connect(show_menu)
 	cultivation_card.add_child(cultivation_close_button)
 
@@ -482,6 +578,19 @@ func build_ui() -> void:
 	for node in [pause_title, pause_info_label, resume_button, pause_menu_button]:
 		pause_card.add_child(node)
 	pause_layer.visible = false
+
+	# Transição de início
+	transition_card = make_panel(Vector2(88, 390), Vector2(544, 330), Color(0.03, 0.11, 0.19, 0.74), Color(C_JADE.r, C_JADE.g, C_JADE.b, 0.32))
+	transition_layer.add_child(transition_card)
+	transition_label = make_label("", 58, Vector2(0, 82), C_PEARL)
+	transition_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	transition_label.size = Vector2(544, 80)
+	transition_subtitle = make_label("", 23, Vector2(40, 188), Color(0.82, 0.98, 1.0, 0.94))
+	transition_subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	transition_subtitle.size = Vector2(464, 80)
+	transition_card.add_child(transition_label)
+	transition_card.add_child(transition_subtitle)
+	transition_layer.visible = false
 
 func make_panel(pos: Vector2, size_panel: Vector2, bg: Color, border: Color) -> Panel:
 	var panel: Panel = Panel.new()
@@ -644,14 +753,17 @@ func update_screen_shake(delta: float) -> void:
 		camera_shake = 0.0
 
 func start_game() -> void:
-	screen = "game"
+	screen = "countdown"
+	run_countdown = 2.35
 	menu_layer.visible = false
 	result_layer.visible = false
 	shop_layer.visible = false
 	pause_layer.visible = false
 	cultivation_layer.visible = false
 	tutorial_layer.visible = false
+	transition_layer.visible = false
 	hud_layer.visible = true
+	transition_layer.visible = true
 	entities.clear()
 	particles.clear()
 	shockwaves.clear()
@@ -664,6 +776,7 @@ func start_game() -> void:
 	completed_run_missions.clear()
 	current_biome_index = 0
 	rare_crystals_run = 0
+	circles_unlocked_run = 0
 	crystal_rain_timer = 11.0
 	crystal_rain_active = 0.0
 	player_lane = 1
@@ -691,7 +804,66 @@ func start_game() -> void:
 	status_label.text = ""
 	status_label.modulate.a = 1.0
 	update_hud()
-	show_status("A trilha está aberta", C_JADE)
+	update_countdown(0.0)
+
+func update_countdown(delta: float) -> void:
+	run_countdown = maxf(0.0, run_countdown - delta)
+	transition_layer.visible = true
+	hud_layer.visible = true
+	if run_countdown > 1.55:
+		transition_label.text = "3"
+		transition_subtitle.text = "Respire. O núcleo desperta."
+	elif run_countdown > 0.85:
+		transition_label.text = "2"
+		transition_subtitle.text = "Sinta o fluxo entre os cristais."
+	elif run_countdown > 0.20:
+		transition_label.text = "1"
+		transition_subtitle.text = "A trilha está se abrindo."
+	else:
+		screen = "game"
+		transition_layer.visible = false
+		show_status("A TRILHA SE ABRIU", C_JADE)
+		flash_alpha = maxf(flash_alpha, 0.10)
+		spawn_shockwave(player.position, C_JADE, 46.0, 220.0, 0.55)
+
+func update_result_motion(delta: float) -> void:
+	result_reveal_timer += delta
+	if result_card != null:
+		result_card.modulate.a = minf(1.0, 0.82 + result_reveal_timer * 0.7)
+	if result_summary_label != null:
+		result_summary_label.scale = Vector2.ONE * (1.0 + sin(pulse_time * 1.8) * 0.012)
+
+func get_stage_progress_percent() -> float:
+	var idx: int = get_cultivation_stage_index()
+	var prev_xp: int = 0
+	var next_xp: int = next_stage_xp()
+	match idx:
+		0:
+			prev_xp = 0
+		1:
+			prev_xp = 500
+		2:
+			prev_xp = 1400
+		3:
+			prev_xp = 3000
+		_:
+			return 100.0
+	if next_xp <= prev_xp:
+		return 100.0
+	return clampf(float(cultivation_xp - prev_xp) / float(next_xp - prev_xp) * 100.0, 0.0, 100.0)
+
+func get_next_form_progress_percent() -> float:
+	var cheapest_price: int = 999999
+	for skin_id in SKINS.keys():
+		if bool(owned_skins.get(skin_id, false)):
+			continue
+		var data: Dictionary = SKINS[skin_id]
+		var price: int = int(data["price"])
+		if price < cheapest_price:
+			cheapest_price = price
+	if cheapest_price == 999999:
+		return 100.0
+	return clampf(float(total_crystals) / float(cheapest_price) * 100.0, 0.0, 100.0)
 
 func show_menu() -> void:
 	screen = "menu"
@@ -701,8 +873,9 @@ func show_menu() -> void:
 	pause_layer.visible = false
 	cultivation_layer.visible = false
 	tutorial_layer.visible = false
+	transition_layer.visible = false
 	hud_layer.visible = false
-	best_label.text = "%s  •  XP %d\nMarca: %d m  •  Cristais: %d" % [get_cultivation_stage_name(), cultivation_xp, int(best_distance), total_crystals]
+	best_label.text = "%s  •  XP %d  •  Círculos %d/%d\nMarca: %d m  •  Cristais: %d" % [get_cultivation_stage_name(), cultivation_xp, unlocked_circle_count(), RESONANCE_CIRCLES.size(), int(best_distance), total_crystals]
 	update_daily_button()
 
 func pause_game() -> void:
@@ -725,7 +898,7 @@ func resume_game() -> void:
 	pause_layer.visible = false
 
 func activate_flow_state() -> void:
-	flow_timer = 5.8 + float(tech_level("flow")) * 0.45
+	flow_timer = 5.8 + float(tech_level("flow")) * 0.45 + (0.75 if has_resonance_circle(5) else 0.0)
 	flow_activations += 1
 	resonance_value = 100.0
 	invulnerable_timer = maxf(invulnerable_timer, 1.2)
@@ -734,7 +907,7 @@ func activate_flow_state() -> void:
 	combo_pop_timer = 1.0
 	spawn_afterimage(player.position, C_GOLD, 0.55)
 	spawn_shockwave(player.position, C_GOLD, 48.0, 260.0, 0.72)
-	show_status("ESTADO DE FLUXO", C_GOLD)
+	show_status("ESTADO DE FLUXO  •  CÍRCULOS %d/%d" % [unlocked_circle_count(), RESONANCE_CIRCLES.size()], C_GOLD)
 	for _i in range(28):
 		var particle_pos: Vector2 = player.position + Vector2(rng.randf_range(-72.0, 72.0), rng.randf_range(-64.0, 64.0))
 		spawn_particle(particle_pos, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.82), 7, 0.58)
@@ -747,12 +920,63 @@ func show_tutorial() -> void:
 	pause_layer.visible = false
 	cultivation_layer.visible = false
 	hud_layer.visible = false
+	transition_layer.visible = false
 	tutorial_layer.visible = true
 
 func close_tutorial() -> void:
 	tutorial_seen = true
 	save_game()
 	show_menu()
+
+func unlocked_circle_count() -> int:
+	var count: int = 0
+	for circle_data in RESONANCE_CIRCLES:
+		var required_xp: int = int(circle_data["xp"])
+		if cultivation_xp >= required_xp:
+			count += 1
+	return count
+
+func has_resonance_circle(index: int) -> bool:
+	return unlocked_circle_count() >= index
+
+func circle_name(index: int) -> String:
+	var safe_index: int = clampi(index - 1, 0, RESONANCE_CIRCLES.size() - 1)
+	return str(RESONANCE_CIRCLES[safe_index]["name"])
+
+func circle_color(index: int) -> Color:
+	var safe_index: int = clampi(index - 1, 0, RESONANCE_CIRCLES.size() - 1)
+	return RESONANCE_CIRCLES[safe_index]["color"]
+
+func next_circle_hint() -> String:
+	var count: int = unlocked_circle_count()
+	if count >= RESONANCE_CIRCLES.size():
+		return "Todos os Círculos de Ressonância despertaram."
+	var next_circle: Dictionary = RESONANCE_CIRCLES[count]
+	var required_xp: int = int(next_circle["xp"])
+	var missing: int = max(0, required_xp - cultivation_xp)
+	return "Próximo círculo: %s  •  faltam %d XP" % [str(next_circle["name"]), missing]
+
+func circles_summary_text() -> String:
+	var count: int = unlocked_circle_count()
+	var lines: Array[String] = []
+	lines.append("Círculos despertos: %d/%d" % [count, RESONANCE_CIRCLES.size()])
+	if count > 0:
+		for i in range(count):
+			var data: Dictionary = RESONANCE_CIRCLES[i]
+			lines.append("• %s — %s" % [str(data["name"]), str(data["effect"])])
+	else:
+		lines.append("• Nenhum círculo desperto ainda.")
+	lines.append(next_circle_hint())
+	return "\n".join(lines)
+
+func circle_unlock_text(old_count: int, new_count: int) -> String:
+	if new_count <= old_count:
+		return ""
+	var unlocked_names: Array[String] = []
+	for i in range(old_count, new_count):
+		if i >= 0 and i < RESONANCE_CIRCLES.size():
+			unlocked_names.append(str(RESONANCE_CIRCLES[i]["name"]))
+	return "Novo despertar: %s" % ", ".join(unlocked_names)
 
 func show_cultivation() -> void:
 	screen = "cultivation"
@@ -762,6 +986,7 @@ func show_cultivation() -> void:
 	pause_layer.visible = false
 	cultivation_layer.visible = true
 	tutorial_layer.visible = false
+	transition_layer.visible = false
 	hud_layer.visible = false
 	update_cultivation_ui()
 
@@ -805,17 +1030,11 @@ func update_cultivation_ui() -> void:
 	var next_xp: int = next_stage_xp()
 	var progress_line: String = "Estágio máximo alcançado"
 	if next_xp > cultivation_xp:
-		progress_line = "Próximo estágio: %d XP" % next_xp
-	var lines: Array[String] = []
-	lines.append("NÚCLEO DE CULTIVO")
-	lines.append("")
-	lines.append("Estágio: %s" % get_cultivation_stage_name())
-	lines.append("XP de Cultivo: %d" % cultivation_xp)
-	lines.append(progress_line)
-	lines.append("")
-	lines.append("Cristais Espirituais: %d" % total_crystals)
-	lines.append("Aprimore técnicas para tornar cada corrida mais fluida.")
-	cultivation_info_label.text = "\n".join(lines)
+		progress_line = "Próximo estágio em %d XP" % max(0, next_xp - cultivation_xp)
+	cultivation_stage_label.text = "%s
+XP %d  ·  %.0f%%" % [get_cultivation_stage_name(), cultivation_xp, get_stage_progress_percent()]
+	cultivation_next_circle_label.text = "%s
+%s" % [next_circle_hint(), progress_line]
 
 	for tech_id in cultivation_upgrade_buttons.keys():
 		var b: Button = cultivation_upgrade_buttons[tech_id]
@@ -823,15 +1042,15 @@ func update_cultivation_ui() -> void:
 		var level: int = tech_level(tech_id)
 		var max_level: int = int(data["max"])
 		var price: int = technique_price(tech_id)
-		var status: String = "Nível %d/%d" % [level, max_level]
+		var action: String = "MAX" if level >= max_level else "%d" % price
+		b.text = "%s
+Nv.%d/%d
+%s" % [str(data["name"]), level, max_level, action]
+		var border_color: Color = C_GOLD if tech_id == "flow" else (C_JADE if tech_id == "jade" else C_CELESTIAL)
 		if level >= max_level:
-			status = "Nível máximo"
-		var action: String = "MAX" if level >= max_level else "%d cristais" % price
-		b.text = "%s  •  %s\n%s  •  %s" % [str(data["name"]), status, str(data["desc"]), action]
-		if level >= max_level:
-			b.add_theme_stylebox_override("normal", make_button_style(Color(0.10, 0.23, 0.22, 0.86), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.62)))
+			b.add_theme_stylebox_override("normal", make_button_style(Color(0.10, 0.23, 0.22, 0.82), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.62)))
 		else:
-			b.add_theme_stylebox_override("normal", make_button_style(Color(0.05, 0.16, 0.25, 0.78), Color(C_CELESTIAL.r, C_CELESTIAL.g, C_CELESTIAL.b, 0.40)))
+			b.add_theme_stylebox_override("normal", make_button_style(Color(0.035, 0.12, 0.19, 0.72), Color(border_color.r, border_color.g, border_color.b, 0.40)))
 
 func upgrade_technique(tech_id: String) -> void:
 	if not TECHNIQUES.has(tech_id):
@@ -862,41 +1081,127 @@ func show_shop() -> void:
 	pause_layer.visible = false
 	cultivation_layer.visible = false
 	tutorial_layer.visible = false
+	transition_layer.visible = false
 	hud_layer.visible = false
+	selected_shop_skin = selected_skin
 	update_shop_ui()
 
+func skin_rarity(skin_id: String) -> String:
+	match skin_id:
+		"nucleo_errante":
+			return "Comum"
+		"semente_jade":
+			return "Raro"
+		"orbe_celestial":
+			return "Raro"
+		"coracao_nebular":
+			return "Épico"
+		"essencia_dourada":
+			return "Lendário"
+		_:
+			return "Comum"
+
+func skin_effect_text(skin_id: String) -> String:
+	match skin_id:
+		"semente_jade":
+			return "Afinidade: Chamado do Jade"
+		"orbe_celestial":
+			return "Afinidade: XP espiritual"
+		"coracao_nebular":
+			return "Afinidade: Ressonância"
+		"essencia_dourada":
+			return "Afinidade: Cristais raros"
+		_:
+			return "Forma equilibrada"
+
+func rarity_color_text(rarity: String) -> Color:
+	match rarity:
+		"Raro":
+			return C_JADE
+		"Épico":
+			return C_NEBULA
+		"Lendário":
+			return C_GOLD
+		"Celestial":
+			return C_PEARL
+		_:
+			return C_CELESTIAL
+
+func skin_affinity_text(skin_id: String) -> String:
+	match skin_id:
+		"semente_jade":
+			return "Jade · Harmonia"
+		"orbe_celestial":
+			return "Céu · Pureza"
+		"coracao_nebular":
+			return "Nebular · Ressonância"
+		"essencia_dourada":
+			return "Ascensão · Fortuna"
+		_:
+			return "Cristal · Equilíbrio"
+
+func select_shop_skin(skin_id: String) -> void:
+	if not SKINS.has(skin_id):
+		return
+	selected_shop_skin = skin_id
+	update_shop_ui()
+	flash_alpha = maxf(flash_alpha, 0.035)
+
+func activate_selected_shop_skin() -> void:
+	buy_or_select_skin(selected_shop_skin)
+
 func update_shop_ui() -> void:
-	var selected_name: String = str(SKINS.get(selected_skin, {}).get("name", "Núcleo Errante"))
-	var lines: Array[String] = []
-	lines.append("PAVILHÃO DAS FORMAS")
-	lines.append("")
-	lines.append("Cristais Espirituais: %d" % total_crystals)
-	lines.append("Forma atual: %s" % selected_name)
-	lines.append("")
-	lines.append("Escolha, compre e cultive novas formas.")
-	shop_info_label.text = "\n".join(lines)
+	if not SKINS.has(selected_shop_skin):
+		selected_shop_skin = selected_skin
+	if not SKINS.has(selected_shop_skin):
+		selected_shop_skin = "nucleo_errante"
+	var data: Dictionary = SKINS[selected_shop_skin]
+	var skin_name: String = str(data["name"])
+	var price: int = int(data["price"])
+	var rarity: String = skin_rarity(selected_shop_skin)
+	var owned: bool = bool(owned_skins.get(selected_shop_skin, false))
+	var equipped: bool = selected_shop_skin == selected_skin
+	var rarity_color: Color = rarity_color_text(rarity)
+
+	shop_info_label.text = "Cristais %d  ·  Formas %d/%d" % [total_crystals, owned_skins.size(), SKINS.size()]
+	shop_preview_name_label.text = skin_name
+	shop_preview_meta_label.text = "%s  ·  %s" % [rarity, skin_affinity_text(selected_shop_skin)]
+	shop_preview_meta_label.add_theme_color_override("font_color", rarity_color)
+	shop_preview_desc_label.text = "%s
+%s" % [str(data["desc"]), skin_effect_text(selected_shop_skin)]
+
+	if equipped:
+		shop_action_button.text = "EQUIPADO"
+		shop_action_button.add_theme_stylebox_override("normal", make_button_style(Color(0.10, 0.23, 0.22, 0.80), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.54)))
+	elif owned:
+		shop_action_button.text = "EQUIPAR FORMA"
+		shop_action_button.add_theme_stylebox_override("normal", make_button_style(Color(0.05, 0.18, 0.24, 0.82), Color(C_JADE.r, C_JADE.g, C_JADE.b, 0.52)))
+	elif total_crystals >= price:
+		shop_action_button.text = "DESPERTAR  ·  %d" % price
+		shop_action_button.add_theme_stylebox_override("normal", make_button_style(Color(0.12, 0.11, 0.05, 0.82), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.58)))
+	else:
+		shop_action_button.text = "FALTAM %d CRISTAIS" % max(0, price - total_crystals)
+		shop_action_button.add_theme_stylebox_override("normal", make_button_style(Color(0.05, 0.10, 0.16, 0.68), Color(0.48, 0.63, 0.76, 0.22)))
 
 	for skin_id in shop_skin_buttons.keys():
 		var b: Button = shop_skin_buttons[skin_id]
-		var data: Dictionary = SKINS[skin_id]
-		var skin_name: String = str(data["name"])
-		var price: int = int(data["price"])
-		var owned: bool = bool(owned_skins.get(skin_id, false))
-		var selected: bool = skin_id == selected_skin
-		var suffix: String = ""
-		if selected:
-			suffix = "  •  EQUIPADO"
-		elif owned:
-			suffix = "  •  USAR"
+		var item_data: Dictionary = SKINS[skin_id]
+		var item_name: String = str(item_data["name"])
+		var item_rarity: String = skin_rarity(skin_id)
+		var item_owned: bool = bool(owned_skins.get(skin_id, false))
+		var item_equipped: bool = skin_id == selected_skin
+		var item_selected: bool = skin_id == selected_shop_skin
+		var item_price: int = int(item_data["price"])
+		var state: String = "EQUIPADO" if item_equipped else ("LIBERADO" if item_owned else "%d" % item_price)
+		b.text = "%s
+%s · %s" % [item_name, item_rarity, state]
+		var item_color: Color = rarity_color_text(item_rarity)
+		if item_selected:
+			b.add_theme_stylebox_override("normal", make_button_style(Color(0.06, 0.15, 0.22, 0.86), Color(item_color.r, item_color.g, item_color.b, 0.72)))
+		elif item_owned:
+			b.add_theme_stylebox_override("normal", make_button_style(Color(0.04, 0.13, 0.19, 0.66), Color(item_color.r, item_color.g, item_color.b, 0.36)))
 		else:
-			suffix = "  •  %d cristais" % price
-		b.text = "%s\n%s" % [skin_name + suffix, str(data["desc"])]
-		if selected:
-			b.add_theme_stylebox_override("normal", make_button_style(Color(0.10, 0.23, 0.22, 0.86), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.62)))
-		elif owned:
-			b.add_theme_stylebox_override("normal", make_button_style(Color(0.05, 0.18, 0.24, 0.82), Color(C_JADE.r, C_JADE.g, C_JADE.b, 0.48)))
-		else:
-			b.add_theme_stylebox_override("normal", make_button_style(Color(0.04, 0.12, 0.20, 0.76), Color(C_CELESTIAL.r, C_CELESTIAL.g, C_CELESTIAL.b, 0.28)))
+			b.add_theme_stylebox_override("normal", make_button_style(Color(0.025, 0.07, 0.12, 0.54), Color(item_color.r, item_color.g, item_color.b, 0.18)))
 
 func buy_or_select_skin(skin_id: String) -> void:
 	if not SKINS.has(skin_id):
@@ -1011,7 +1316,7 @@ func update_game(delta: float, real_delta: float) -> void:
 		crystal_rain_active = maxf(0.0, crystal_rain_active - real_delta)
 	elif crystal_rain_timer <= 0.0 and distance > 350.0:
 		start_crystal_rain()
-	var flow_multiplier: float = 1.65 if flow_timer > 0.0 else 1.0
+	var flow_multiplier: float = 1.65 + (float(unlocked_circle_count()) * 0.03 if flow_timer > 0.0 else 0.0) if flow_timer > 0.0 else 1.0
 	score += int(14.0 * delta * (1.0 + float(combo) * 0.08) * flow_multiplier)
 	if flow_timer > 0.0:
 		flow_timer = maxf(0.0, flow_timer - real_delta)
@@ -1203,7 +1508,8 @@ func update_entities(delta: float) -> void:
 
 		var dist_to_player: float = pos.distance_to(player.position)
 		if entity_type == "crystal":
-			if magnet_timer > 0.0 and dist_to_player < 220.0:
+			var magnet_range: float = 220.0 + (42.0 if has_resonance_circle(2) else 0.0)
+			if magnet_timer > 0.0 and dist_to_player < magnet_range:
 				pos = pos.lerp(player.position, 8.0 * delta)
 				e["pos"] = pos
 				dist_to_player = pos.distance_to(player.position)
@@ -1236,13 +1542,16 @@ func collect_crystal(e: Dictionary) -> void:
 		multiplier += 1
 	var value: int = int(e.get("value", 1))
 	var is_rare: bool = str(e.get("kind", "espiritual")) == "raro"
+	if is_rare and has_resonance_circle(4):
+		value += 2
 	if is_rare:
 		rare_crystals_run += 1
 	crystals_run += value * multiplier
 	score += (90 if is_rare else 30) * multiplier
 	combo += 1
 	combo_pop_timer = 1.0
-	resonance_value = minf(100.0, resonance_value + (3.8 if is_rare else 0.8))
+	var resonance_gain: float = (3.8 if is_rare else 0.8) + (0.22 if has_resonance_circle(1) else 0.0)
+	resonance_value = minf(100.0, resonance_value + resonance_gain)
 	var crystal_pos: Vector2 = e["pos"]
 	var particle_color: Color = C_GOLD if is_rare else get_biome_accent()
 	spawn_particle(crystal_pos, Color(particle_color.r, particle_color.g, particle_color.b, 0.85), 18 if is_rare else 13, 0.58 if is_rare else 0.5)
@@ -1274,7 +1583,7 @@ func collect_power(kind: String) -> void:
 func perfect_graze() -> void:
 	perfect_grazes += 1
 	combo += 2
-	var bonus: int = 90 + combo * 5
+	var bonus: int = 90 + combo * 5 + (35 if has_resonance_circle(3) else 0)
 	score += bonus
 	combo_pop_timer = 1.0
 	resonance_value = minf(100.0, resonance_value + 13.0)
@@ -1319,11 +1628,15 @@ func game_over() -> void:
 	screen = "result"
 	completed_run_missions = calculate_run_missions()
 	run_mission_bonus = completed_run_missions.size() * 75
+	var old_circle_count: int = unlocked_circle_count()
 	last_xp_gain = calculate_xp_gain()
 	cultivation_xp += last_xp_gain
+	circles_unlocked_run = max(0, unlocked_circle_count() - old_circle_count)
 	total_crystals += crystals_run + run_mission_bonus
+	var was_new_mark: bool = distance >= best_distance
 	best_distance = maxf(best_distance, distance)
 	save_game()
+	result_reveal_timer = 0.0
 	hud_layer.visible = false
 	result_layer.visible = true
 	menu_layer.visible = false
@@ -1331,12 +1644,21 @@ func game_over() -> void:
 	pause_layer.visible = false
 	cultivation_layer.visible = false
 	tutorial_layer.visible = false
-	var new_mark: String = "\nNova Marca de Ascensão!" if int(distance) >= int(best_distance) else ""
+	transition_layer.visible = false
+	var new_mark: String = "Nova Marca de Ascensão!" if was_new_mark else "Progresso de cultivo registrado."
 	var mission_text: String = "Nenhuma missão concluída"
 	if completed_run_missions.size() > 0:
 		mission_text = "\n".join(completed_run_missions)
+	var circle_text: String = circle_unlock_text(unlocked_circle_count() - circles_unlocked_run, unlocked_circle_count())
+	if circle_text == "":
+		circle_text = next_circle_hint()
 	var biome_reached: String = str(get_current_biome()["name"])
-	result_stats.text = "Distância: %d m\nBioma: %s\nPontuação: %d\nCristais: %d  •  Raros: %d\nBônus de Missões: +%d\nXP de Cultivo: +%d\nRessonâncias Perfeitas: %d\nEstados de Fluxo: %d\nMaior Fluxo: x%d\n%s\n\nMissões:\n%s\n\n%s\nEstágio: %s\nTotal de Cristais: %d\nMarca de Ascensão: %d m" % [int(distance), biome_reached, score, crystals_run, rare_crystals_run, run_mission_bonus, last_xp_gain, perfect_grazes, flow_activations, max(combo, 1), new_mark, mission_text, get_next_unlock_hint(), get_cultivation_stage_name(), total_crystals, int(best_distance)]
+	result_summary_label.text = "%d m  •  +%d XP\n+%d Cristais" % [int(distance), last_xp_gain, crystals_run + run_mission_bonus]
+	result_stats.text = "Bioma alcançado: %s\nPontuação: %d\nCristais raros: %d\nRessonâncias Perfeitas: %d\nEstados de Fluxo: %d\nMaior Fluxo: x%d\n%s\n%s\n\nMissões:\n%s" % [biome_reached, score, rare_crystals_run, perfect_grazes, flow_activations, max(combo, 1), new_mark, circle_text, mission_text]
+	result_xp_label.text = "Núcleo: %s  •  XP %d  •  Círculos %d/%d" % [get_cultivation_stage_name(), cultivation_xp, unlocked_circle_count(), RESONANCE_CIRCLES.size()]
+	result_xp_bar.value = get_stage_progress_percent()
+	result_form_label.text = get_next_unlock_hint()
+	result_form_bar.value = get_next_form_progress_percent()
 	camera_shake = 17.0
 
 func show_status(text: String, color: Color) -> void:
@@ -1475,7 +1797,6 @@ func load_save() -> void:
 			last_daily_reward = str(parsed.get("last_daily_reward", ""))
 			tutorial_seen = bool(parsed.get("tutorial_seen", false))
 			cultivation_xp = int(parsed.get("cultivation_xp", 0))
-			tutorial_seen = bool(parsed.get("tutorial_seen", false))
 			var loaded_techniques: Variant = parsed.get("technique_levels", {"dash": 0, "jade": 0, "flow": 0})
 			if typeof(loaded_techniques) == TYPE_DICTIONARY:
 				technique_levels = loaded_techniques
@@ -1493,6 +1814,8 @@ func _draw() -> void:
 	draw_cultivation_background()
 	draw_biome_overlay()
 	draw_premium_menu_glow()
+	draw_result_glow()
+	draw_visual_reboot_showcases()
 	draw_spiritual_lanes()
 	draw_speed_lines()
 	draw_afterimages()
@@ -1500,6 +1823,8 @@ func _draw() -> void:
 	draw_particles()
 	draw_shockwaves()
 	draw_player_aura()
+	draw_resonance_circles()
+	draw_dash_meter()
 	draw_flash_overlay()
 
 func draw_biome_overlay() -> void:
@@ -1523,6 +1848,107 @@ func draw_biome_overlay() -> void:
 		var gate_center: Vector2 = Vector2(VIEW_W * 0.5, 210.0)
 		draw_arc(gate_center, 155.0, PI * 1.05, PI * 1.95, 96, Color(accent.r, accent.g, accent.b, 0.16), 5.0, true)
 		draw_circle(gate_center, 84.0, Color(secondary.r, secondary.g, secondary.b, 0.035))
+
+func draw_visual_reboot_showcases() -> void:
+	if screen == "menu":
+		draw_menu_showcase()
+	elif screen == "shop":
+		draw_shop_showcase()
+	elif screen == "cultivation":
+		draw_cultivation_chamber()
+
+func draw_orb_preview(center: Vector2, radius: float, skin_id: String, power: float) -> void:
+	var c: Color = skin_color(skin_id)
+	draw_circle(center, radius * 2.35, Color(c.r, c.g, c.b, 0.060 + power * 0.025))
+	draw_circle(center, radius * 1.55, Color(c.r, c.g, c.b, 0.105 + power * 0.035))
+	for i in range(4):
+		var r: float = radius * (1.42 + float(i) * 0.22) + sin(pulse_time * 1.3 + float(i)) * 5.0
+		var start_angle: float = pulse_time * (0.24 + float(i) * 0.05) + float(i) * 0.75
+		var alpha: float = 0.14 - float(i) * 0.015 + power * 0.04
+		draw_arc(center, r, start_angle, start_angle + PI * (1.25 + float(i % 2) * 0.18), 96, Color(c.r, c.g, c.b, alpha), 2.8, true)
+		draw_arc(center, r * 0.86, -start_angle, -start_angle + PI * 0.70, 64, Color(C_PEARL.r, C_PEARL.g, C_PEARL.b, alpha * 0.45), 1.4, true)
+	var points: PackedVector2Array = PackedVector2Array()
+	for i in range(8):
+		var a: float = TAU * float(i) / 8.0 + pulse_time * 0.16
+		var rr: float = radius * (0.62 if i % 2 == 0 else 0.42)
+		points.append(center + Vector2(cos(a), sin(a)) * rr)
+	draw_colored_polygon(points, Color(c.r, c.g, c.b, 0.80))
+	var outline: PackedVector2Array = PackedVector2Array()
+	for outline_point in points:
+		outline.append(outline_point)
+	outline.append(points[0])
+	draw_polyline(outline, Color(C_PEARL.r, C_PEARL.g, C_PEARL.b, 0.68), 2.0)
+	draw_circle(center, radius * 0.18 + sin(pulse_time * 4.0) * 2.0, Color(C_PEARL.r, C_PEARL.g, C_PEARL.b, 0.82))
+
+func draw_mini_form_node(center: Vector2, skin_id: String, selected: bool, locked: bool) -> void:
+	var c: Color = skin_color(skin_id)
+	var alpha: float = 0.42 if locked else 0.86
+	var outer: float = 28.0 if selected else 22.0
+	draw_circle(center, outer + 18.0, Color(c.r, c.g, c.b, 0.055))
+	draw_arc(center, outer + 8.0, pulse_time * 0.32, pulse_time * 0.32 + PI * 1.42, 48, Color(c.r, c.g, c.b, 0.18 + (0.12 if selected else 0.0)), 2.0, true)
+	draw_circle(center, outer, Color(c.r, c.g, c.b, alpha * 0.55))
+	draw_circle(center, outer * 0.42, Color(C_PEARL.r, C_PEARL.g, C_PEARL.b, alpha * 0.78))
+	if locked:
+		draw_line(center + Vector2(-18.0, -18.0), center + Vector2(18.0, 18.0), Color(0.7, 0.85, 1.0, 0.26), 2.0)
+
+func draw_menu_showcase() -> void:
+	var center: Vector2 = Vector2(VIEW_W * 0.5, 320.0)
+	draw_circle(center, 245.0, Color(C_CELESTIAL.r, C_CELESTIAL.g, C_CELESTIAL.b, 0.030))
+	draw_circle(center, 160.0, Color(C_JADE.r, C_JADE.g, C_JADE.b, 0.040))
+	draw_orb_preview(center, 58.0, selected_skin, 0.5)
+	var count: int = unlocked_circle_count()
+	for i in range(RESONANCE_CIRCLES.size()):
+		var c: Color = RESONANCE_CIRCLES[i]["color"]
+		var r: float = 104.0 + float(i) * 17.0
+		var a: float = pulse_time * (0.18 + float(i) * 0.025) + float(i) * 0.55
+		var unlocked: bool = i < count
+		var alpha: float = 0.16 if unlocked else 0.035
+		draw_arc(center, r, a, a + PI * 1.22, 96, Color(c.r, c.g, c.b, alpha), 2.0, true)
+
+func draw_shop_showcase() -> void:
+	var center: Vector2 = Vector2(VIEW_W * 0.5, 300.0)
+	var rarity: String = skin_rarity(selected_shop_skin)
+	var c: Color = rarity_color_text(rarity)
+	draw_circle(center, 230.0, Color(c.r, c.g, c.b, 0.030))
+	draw_circle(center, 152.0, Color(c.r, c.g, c.b, 0.055))
+	draw_orb_preview(center, 66.0, selected_shop_skin, 0.65)
+	var skin_order: Array[String] = ["nucleo_errante", "semente_jade", "orbe_celestial", "coracao_nebular", "essencia_dourada"]
+	for i in range(skin_order.size()):
+		var a: float = -PI * 0.86 + float(i) * (PI * 1.72 / 4.0)
+		var pos: Vector2 = center + Vector2(cos(a), sin(a)) * 158.0
+		var sid: String = skin_order[i]
+		draw_mini_form_node(pos, sid, sid == selected_shop_skin, not bool(owned_skins.get(sid, false)))
+
+func draw_cultivation_chamber() -> void:
+	var center: Vector2 = Vector2(VIEW_W * 0.5, 312.0)
+	draw_circle(center, 252.0, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.026))
+	draw_circle(center, 178.0, Color(C_CELESTIAL.r, C_CELESTIAL.g, C_CELESTIAL.b, 0.038))
+	draw_orb_preview(center, 62.0, selected_skin, 0.72)
+	for i in range(RESONANCE_CIRCLES.size()):
+		var data: Dictionary = RESONANCE_CIRCLES[i]
+		var c: Color = data["color"]
+		var unlocked: bool = i < unlocked_circle_count()
+		var r: float = 108.0 + float(i) * 19.0
+		var a: float = pulse_time * (0.22 + float(i) * 0.035) + float(i) * 0.60
+		var alpha: float = 0.18 if unlocked else 0.045
+		var width: float = 3.0 if unlocked else 1.5
+		draw_arc(center, r, a, a + PI * 1.48, 112, Color(c.r, c.g, c.b, alpha), width, true)
+		if not unlocked:
+			draw_arc(center, r, a + PI * 1.65, a + PI * 1.92, 32, Color(C_PEARL.r, C_PEARL.g, C_PEARL.b, 0.025), 1.0, true)
+	var tech_centers: Array[Vector2] = [Vector2(137.0, 828.0), Vector2(360.0, 840.0), Vector2(583.0, 828.0)]
+	var tech_colors: Array[Color] = [C_CELESTIAL, C_JADE, C_GOLD]
+	for i in range(tech_centers.size()):
+		var tc: Color = tech_colors[i]
+		var p: Vector2 = tech_centers[i]
+		draw_circle(p, 52.0, Color(tc.r, tc.g, tc.b, 0.045))
+		draw_arc(p, 43.0, pulse_time * 0.5 + float(i), pulse_time * 0.5 + float(i) + PI * 1.24, 48, Color(tc.r, tc.g, tc.b, 0.24), 2.0, true)
+
+func draw_result_glow() -> void:
+	if screen != "result":
+		return
+	var center: Vector2 = Vector2(VIEW_W * 0.5, 315.0)
+	draw_circle(center, 260.0, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.045))
+	draw_arc(center, 190.0 + sin(pulse_time * 1.1) * 8.0, pulse_time * 0.16, pulse_time * 0.16 + PI * 1.55, 96, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.07), 3.0, true)
 
 func draw_premium_menu_glow() -> void:
 	if screen != "menu":
@@ -1578,6 +2004,21 @@ func draw_shockwaves() -> void:
 		var alpha: float = (1.0 - t) * 0.34
 		draw_arc(pos, radius, 0.0, TAU, 96, Color(c.r, c.g, c.b, alpha), 4.0 * (1.0 - t) + 1.0, true)
 		draw_circle(pos, radius * 0.42, Color(c.r, c.g, c.b, alpha * 0.13))
+
+func draw_dash_meter() -> void:
+	if screen != "game" and screen != "countdown":
+		return
+	var center: Vector2 = Vector2(650.0, 1092.0)
+	var cooldown_total: float = maxf(0.72, 1.15 - float(tech_level("dash")) * 0.08)
+	var ready_ratio: float = 1.0 - clampf(dash_cooldown / cooldown_total, 0.0, 1.0)
+	var accent: Color = C_JADE if ready_ratio >= 1.0 else get_biome_accent()
+	draw_circle(center, 56.0, Color(0.02, 0.10, 0.16, 0.42))
+	draw_arc(center, 46.0, -PI * 0.5, -PI * 0.5 + TAU * ready_ratio, 64, Color(accent.r, accent.g, accent.b, 0.88), 5.0, true)
+	draw_circle(center, 24.0, Color(accent.r, accent.g, accent.b, 0.12 + ready_ratio * 0.10))
+	if ready_ratio >= 1.0:
+		draw_circle(center, 7.0 + sin(pulse_time * 5.0) * 1.5, Color(C_PEARL.r, C_PEARL.g, C_PEARL.b, 0.82))
+	else:
+		draw_circle(center, 6.0, Color(0.70, 0.88, 1.0, 0.42))
 
 func draw_flash_overlay() -> void:
 	if flash_alpha <= 0.001:
@@ -1707,6 +2148,30 @@ func draw_player_aura() -> void:
 		draw_arc(p, 148.0, -pulse_time * 1.2, -pulse_time * 1.2 + PI * 1.55, 96, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.26), 3.0, true)
 	if dash_timer > 0.0:
 		draw_circle(p, 132.0, Color(C_JADE.r, C_JADE.g, C_JADE.b, 0.10))
+
+func draw_resonance_circles() -> void:
+	if player == null:
+		return
+	var count: int = unlocked_circle_count()
+	if count <= 0:
+		return
+	var p: Vector2 = player.position
+	for i in range(count):
+		var idx: int = i + 1
+		var c: Color = circle_color(idx)
+		var base_radius: float = 92.0 + float(i) * 18.0
+		var pulse: float = sin(pulse_time * (1.4 + float(i) * 0.16) + float(i)) * 5.0
+		var radius: float = base_radius + pulse
+		var start_angle: float = pulse_time * (0.42 + float(i) * 0.09) + float(i) * 0.75
+		var arc_len: float = PI * (1.10 + float(i % 2) * 0.18)
+		var alpha: float = 0.12 + float(i) * 0.025
+		if flow_timer > 0.0:
+			alpha += 0.08
+		draw_arc(p, radius, start_angle, start_angle + arc_len, 96, Color(c.r, c.g, c.b, alpha), 2.2 + float(i) * 0.28, true)
+		draw_arc(p, radius, start_angle + PI, start_angle + PI + arc_len * 0.48, 64, Color(C_PEARL.r, C_PEARL.g, C_PEARL.b, alpha * 0.52), 1.2, true)
+		var node_angle: float = start_angle + arc_len
+		var node_pos: Vector2 = p + Vector2(cos(node_angle), sin(node_angle)) * radius
+		draw_circle(node_pos, 4.0 + float(i) * 0.3, Color(c.r, c.g, c.b, alpha * 1.9))
 
 func draw_crystal(p: Vector2, r: float, color: Color, rot: float) -> void:
 	var pts: PackedVector2Array = PackedVector2Array()
