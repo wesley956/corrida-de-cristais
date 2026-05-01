@@ -46,6 +46,10 @@ func _ready() -> void:
 	tw.parallel().tween_property(self, "scale", Vector2.ONE, 0.36)
 
 func set_data(stage: String, xp: int, circles: int, circle_total: int, best: int, crystals: int, daily_available: bool, color: Color, ring_count: int) -> void:
+	if bg == null or orb == null or stats == null:
+		call_deferred("set_data", stage, xp, circles, circle_total, best, crystals, daily_available, color, ring_count)
+		return
+
 	bg.accent = color
 	orb.orb_color = color
 	orb.ring_count = max(1, ring_count)

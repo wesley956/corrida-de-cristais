@@ -43,6 +43,10 @@ func _ready() -> void:
 	back_button.pressed.connect(func(): back_requested.emit())
 
 func set_data(stage: String, xp: int, progress: float, next_circle: String, color: Color, ring_count: int, techniques: Array[Dictionary]) -> void:
+	if bg == null or orb == null or stage_label == null:
+		call_deferred("set_data", stage, xp, progress, next_circle, color, ring_count, techniques)
+		return
+
 	bg.accent = color
 	orb.orb_color = color
 	orb.ring_count = max(1, ring_count)
@@ -50,6 +54,6 @@ func set_data(stage: String, xp: int, progress: float, next_circle: String, colo
 	next_label.text = next_circle
 	xp_bar.value = clampf(progress, 0.0, 100.0)
 
-	for i in range(min(techniques.size(), tech_buttons.size())):
-		var d := techniques[i]
+	for i: int in range(min(techniques.size(), tech_buttons.size())):
+		var d: Dictionary = techniques[i]
 		tech_buttons[i].text = "%s\nNv. %s\n%s" % [str(d.get("name", "")), str(d.get("level", "")), str(d.get("action", ""))]

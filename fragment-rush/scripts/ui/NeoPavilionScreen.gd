@@ -30,27 +30,34 @@ func _ready() -> void:
 	desc_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	FragmentUiTheme.label(crystals_label, 16, FragmentUiTheme.MUTED, true)
 
-	for b in skin_buttons:
+	for b: Button in skin_buttons:
 		b.add_theme_stylebox_override("normal", FragmentUiTheme.button_style(Color(0.02, 0.09, 0.14, 0.42), FragmentUiTheme.CYAN, 28))
 		b.add_theme_font_size_override("font_size", 13)
 		b.add_theme_color_override("font_color", FragmentUiTheme.PEARL)
 
-	for b in [action_button, back_button]:
+	for b: Button in [action_button, back_button]:
 		b.add_theme_stylebox_override("normal", FragmentUiTheme.button_style())
 		b.add_theme_stylebox_override("hover", FragmentUiTheme.button_style(Color(0.04, 0.14, 0.20, 0.62), FragmentUiTheme.JADE))
 		b.add_theme_font_size_override("font_size", 19)
 		b.add_theme_color_override("font_color", FragmentUiTheme.PEARL)
 
 	action_button.add_theme_stylebox_override("normal", FragmentUiTheme.button_style(Color(0.05, 0.16, 0.22, 0.66), FragmentUiTheme.GOLD))
-	back_button.pressed.connect(func(): back_requested.emit())
-	action_button.pressed.connect(func(): action_requested.emit())
+	back_button.pressed.connect(func() -> void: back_requested.emit())
+	action_button.pressed.connect(func() -> void: action_requested.emit())
 
-	var ids := ["nucleo_errante", "semente_jade", "orbe_celestial", "coracao_nebular", "essencia_dourada"]
-	for i in range(skin_buttons.size()):
-		var sid := ids[i]
-		skin_buttons[i].pressed.connect(func(id := sid): skin_selected.emit(id))
+	var ids: Array[String] = ["nucleo_errante", "semente_jade", "orbe_celestial", "coracao_nebular", "essencia_dourada"]
+	for i: int in range(skin_buttons.size()):
+		var sid: String = ids[i]
+		skin_buttons[i].pressed.connect(_on_skin_button_pressed.bind(sid))
+
+func _on_skin_button_pressed(skin_id: String) -> void:
+	skin_selected.emit(skin_id)
 
 func set_data(selected_id: String, selected_name: String, rarity: String, desc: String, effect: String, crystals: int, action_text: String, color: Color, ring_count: int, buttons: Array[Dictionary]) -> void:
+	if bg == null or orb == null or name_label == null:
+		call_deferred("set_data", selected_id, selected_name, rarity, desc, effect, crystals, action_text, color, ring_count, buttons)
+		return
+
 	bg.accent = color
 	orb.orb_color = color
 	orb.ring_count = max(1, ring_count)
@@ -59,8 +66,9 @@ func set_data(selected_id: String, selected_name: String, rarity: String, desc: 
 	desc_label.text = desc
 	crystals_label.text = "Cristais Espirituais · %d" % crystals
 	action_button.text = action_text
-	for i in range(min(buttons.size(), skin_buttons.size())):
-		var data := buttons[i]
+
+	for i: int in range(min(buttons.size(), skin_buttons.size())):
+		var data: Dictionary = buttons[i]
 		skin_buttons[i].text = "%s\n%s" % [str(data.get("name", "")), str(data.get("state", ""))]
 		var c: Color = data.get("color", FragmentUiTheme.CYAN)
 		skin_buttons[i].add_theme_stylebox_override("normal", FragmentUiTheme.button_style(Color(c.r, c.g, c.b, 0.16), c, 28))
