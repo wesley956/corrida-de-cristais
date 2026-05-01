@@ -1,7 +1,7 @@
 extends Node2D
 
 # Fragment Rush: Corrida dos Cristais
-# v0.6 - Pavilhao Funcional + Missoes
+# v0.7 - Nucleo de Cultivo + Tecnicas
 # Runner mobile com atmosfera wuxia/cultivation: fluxo, ressonancia e ascensao.
 
 const SAVE_PATH: String = "user://fragment_rush_save.json"
@@ -32,6 +32,7 @@ var menu_layer: CanvasLayer
 var result_layer: CanvasLayer
 var shop_layer: CanvasLayer
 var pause_layer: CanvasLayer
+var cultivation_layer: CanvasLayer
 
 var score_label: Label
 var crystal_label: Label
@@ -48,6 +49,7 @@ var menu_card: Panel
 var result_card: Panel
 var shop_card: Panel
 var pause_card: Panel
+var cultivation_card: Panel
 
 var title_label: Label
 var subtitle_label: Label
@@ -56,7 +58,11 @@ var shop_button: Button
 var close_shop_button: Button
 var shop_info_label: Label
 var daily_button: Button
+var cultivation_button: Button
 var shop_skin_buttons: Dictionary = {}
+var cultivation_info_label: Label
+var cultivation_close_button: Button
+var cultivation_upgrade_buttons: Dictionary = {}
 
 var result_title: Label
 var result_stats: Label
@@ -98,6 +104,9 @@ var owned_skins: Dictionary = {"nucleo_errante": true}
 var last_daily_reward: String = ""
 var run_mission_bonus: int = 0
 var completed_run_missions: Array[String] = []
+var cultivation_xp: int = 0
+var last_xp_gain: int = 0
+var technique_levels: Dictionary = {"dash": 0, "jade": 0, "flow": 0}
 
 const SKINS: Dictionary = {
 	"nucleo_errante": {"name": "Núcleo Errante", "price": 0, "desc": "Forma inicial equilibrada."},
@@ -106,6 +115,20 @@ const SKINS: Dictionary = {
 	"coracao_nebular": {"name": "Coração Nebular", "price": 4000, "desc": "Ressonância roxa e misteriosa."},
 	"essencia_dourada": {"name": "Essência Dourada", "price": 6500, "desc": "Forma rara de ascensão cristalina."}
 }
+
+const TECHNIQUES: Dictionary = {
+	"dash": {"name": "Passo Espiritual", "max": 5, "base_price": 650, "desc": "Reduz a recarga do dash."},
+	"jade": {"name": "Chamado do Jade", "max": 5, "base_price": 800, "desc": "Aumenta a duração do ímã."},
+	"flow": {"name": "Estado de Fluxo", "max": 5, "base_price": 1000, "desc": "Aumenta a duração da ascensão."}
+}
+
+const CULTIVATION_STAGES: Array[String] = [
+	"Fluxo Inicial",
+	"Qi Desperto",
+	"Núcleo Refinado",
+	"Fluxo Celestial",
+	"Ascensão Cristalina"
+]
 
 var spawn_timer: float = 0.0
 var crystal_spawn_timer: float = 0.0
@@ -236,6 +259,8 @@ func build_ui() -> void:
 	add_child(shop_layer)
 	pause_layer = CanvasLayer.new()
 	add_child(pause_layer)
+	cultivation_layer = CanvasLayer.new()
+	add_child(cultivation_layer)
 
 	# HUD - glassmorphism espiritual
 	var hud_left_panel: Panel = make_panel(Vector2(22, 22), Vector2(205, 96), Color(0.03, 0.12, 0.20, 0.72), Color(C_CELESTIAL.r, C_CELESTIAL.g, C_CELESTIAL.b, 0.26))
@@ -299,14 +324,16 @@ func build_ui() -> void:
 	best_label = make_label("", 22, Vector2(0, 260), Color(0.74, 0.92, 1.0, 0.92))
 	best_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	best_label.size = Vector2(624, 56)
-	start_button = make_button("INICIAR CORRIDA", Vector2(102, 368), Vector2(420, 84))
-	shop_button = make_button("PAVILHÃO DAS FORMAS", Vector2(116, 470), Vector2(392, 72))
-	daily_button = make_button("RECEBER ESSÊNCIA DIÁRIA", Vector2(116, 558), Vector2(392, 68))
-	daily_button.add_theme_font_size_override("font_size", 19)
+	start_button = make_button("INICIAR CORRIDA", Vector2(102, 348), Vector2(420, 82))
+	shop_button = make_button("PAVILHÃO DAS FORMAS", Vector2(116, 448), Vector2(392, 68))
+	cultivation_button = make_button("NÚCLEO DE CULTIVO", Vector2(116, 532), Vector2(392, 68))
+	daily_button = make_button("RECEBER ESSÊNCIA DIÁRIA", Vector2(116, 616), Vector2(392, 66))
+	daily_button.add_theme_font_size_override("font_size", 18)
 	start_button.pressed.connect(start_game)
 	shop_button.pressed.connect(show_shop)
+	cultivation_button.pressed.connect(show_cultivation)
 	daily_button.pressed.connect(claim_daily_reward)
-	for node in [title_label, subtitle_label, best_label, start_button, shop_button, daily_button]:
+	for node in [title_label, subtitle_label, best_label, start_button, shop_button, cultivation_button, daily_button]:
 		menu_card.add_child(node)
 
 	# Resultado
@@ -315,10 +342,10 @@ func build_ui() -> void:
 	result_title = make_label("FLUXO INTERROMPIDO", 38, Vector2(0, 48), C_PEARL)
 	result_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	result_title.size = Vector2(604, 70)
-	result_stats = make_label("", 20, Vector2(56, 142), Color(0.86, 0.96, 1.0, 1.0))
-	result_stats.size = Vector2(492, 430)
-	restart_button = make_button("CULTIVAR NOVAMENTE", Vector2(92, 620), Vector2(420, 78))
-	menu_button = make_button("VOLTAR À TRILHA", Vector2(132, 722), Vector2(340, 70))
+	result_stats = make_label("", 18, Vector2(56, 130), Color(0.86, 0.96, 1.0, 1.0))
+	result_stats.size = Vector2(492, 475)
+	restart_button = make_button("CULTIVAR NOVAMENTE", Vector2(92, 660), Vector2(420, 76))
+	menu_button = make_button("VOLTAR À TRILHA", Vector2(132, 758), Vector2(340, 68))
 	restart_button.pressed.connect(start_game)
 	menu_button.pressed.connect(show_menu)
 	for node in [result_title, result_stats, restart_button, menu_button]:
@@ -343,6 +370,26 @@ func build_ui() -> void:
 	close_shop_button = make_button("VOLTAR", Vector2(162, 930), Vector2(300, 70))
 	close_shop_button.pressed.connect(show_menu)
 	shop_card.add_child(close_shop_button)
+
+	# Núcleo de Cultivo
+	cultivation_card = make_panel(Vector2(48, 110), Vector2(624, 1040), Color(0.03, 0.11, 0.19, 0.72), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.26))
+	cultivation_layer.add_child(cultivation_card)
+	cultivation_info_label = make_label("", 21, Vector2(40, 36), C_PEARL)
+	cultivation_info_label.size = Vector2(544, 300)
+	cultivation_card.add_child(cultivation_info_label)
+
+	var technique_order: Array[String] = ["dash", "jade", "flow"]
+	for i in range(technique_order.size()):
+		var tech_id: String = technique_order[i]
+		var tb: Button = make_button("", Vector2(54, 380 + i * 126), Vector2(516, 96))
+		tb.add_theme_font_size_override("font_size", 18)
+		tb.pressed.connect(func() -> void: upgrade_technique(tech_id))
+		cultivation_upgrade_buttons[tech_id] = tb
+		cultivation_card.add_child(tb)
+
+	cultivation_close_button = make_button("VOLTAR", Vector2(162, 930), Vector2(300, 70))
+	cultivation_close_button.pressed.connect(show_menu)
+	cultivation_card.add_child(cultivation_close_button)
 
 	# Tela de pausa
 	pause_card = make_panel(Vector2(72, 305), Vector2(576, 515), Color(0.03, 0.11, 0.19, 0.76), Color(C_JADE.r, C_JADE.g, C_JADE.b, 0.30))
@@ -527,6 +574,7 @@ func start_game() -> void:
 	result_layer.visible = false
 	shop_layer.visible = false
 	pause_layer.visible = false
+	cultivation_layer.visible = false
 	hud_layer.visible = true
 	entities.clear()
 	particles.clear()
@@ -571,8 +619,9 @@ func show_menu() -> void:
 	result_layer.visible = false
 	shop_layer.visible = false
 	pause_layer.visible = false
+	cultivation_layer.visible = false
 	hud_layer.visible = false
-	best_label.text = "Marca de Ascensão: %d m\nCristais Espirituais: %d" % [int(best_distance), total_crystals]
+	best_label.text = "%s  •  XP %d\nMarca: %d m  •  Cristais: %d" % [get_cultivation_stage_name(), cultivation_xp, int(best_distance), total_crystals]
 	update_daily_button()
 
 func pause_game() -> void:
@@ -584,6 +633,7 @@ func pause_game() -> void:
 	menu_layer.visible = false
 	result_layer.visible = false
 	shop_layer.visible = false
+	cultivation_layer.visible = false
 
 func resume_game() -> void:
 	if screen != "pause":
@@ -593,7 +643,7 @@ func resume_game() -> void:
 	pause_layer.visible = false
 
 func activate_flow_state() -> void:
-	flow_timer = 5.8
+	flow_timer = 5.8 + float(tech_level("flow")) * 0.45
 	flow_activations += 1
 	resonance_value = 100.0
 	invulnerable_timer = maxf(invulnerable_timer, 1.2)
@@ -607,12 +657,112 @@ func activate_flow_state() -> void:
 		var particle_pos: Vector2 = player.position + Vector2(rng.randf_range(-72.0, 72.0), rng.randf_range(-64.0, 64.0))
 		spawn_particle(particle_pos, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.82), 7, 0.58)
 
+func show_cultivation() -> void:
+	screen = "cultivation"
+	menu_layer.visible = false
+	result_layer.visible = false
+	shop_layer.visible = false
+	pause_layer.visible = false
+	cultivation_layer.visible = true
+	hud_layer.visible = false
+	update_cultivation_ui()
+
+func get_cultivation_stage_index() -> int:
+	if cultivation_xp >= 6000:
+		return 4
+	if cultivation_xp >= 3000:
+		return 3
+	if cultivation_xp >= 1400:
+		return 2
+	if cultivation_xp >= 500:
+		return 1
+	return 0
+
+func get_cultivation_stage_name() -> String:
+	return CULTIVATION_STAGES[get_cultivation_stage_index()]
+
+func next_stage_xp() -> int:
+	var idx: int = get_cultivation_stage_index()
+	match idx:
+		0:
+			return 500
+		1:
+			return 1400
+		2:
+			return 3000
+		3:
+			return 6000
+		_:
+			return cultivation_xp
+
+func tech_level(tech_id: String) -> int:
+	return int(technique_levels.get(tech_id, 0))
+
+func technique_price(tech_id: String) -> int:
+	var data: Dictionary = TECHNIQUES[tech_id]
+	var level: int = tech_level(tech_id)
+	return int(data["base_price"]) + level * 550
+
+func update_cultivation_ui() -> void:
+	var next_xp: int = next_stage_xp()
+	var progress_line: String = "Estágio máximo alcançado"
+	if next_xp > cultivation_xp:
+		progress_line = "Próximo estágio: %d XP" % next_xp
+	var lines: Array[String] = []
+	lines.append("NÚCLEO DE CULTIVO")
+	lines.append("")
+	lines.append("Estágio: %s" % get_cultivation_stage_name())
+	lines.append("XP de Cultivo: %d" % cultivation_xp)
+	lines.append(progress_line)
+	lines.append("")
+	lines.append("Cristais Espirituais: %d" % total_crystals)
+	lines.append("Aprimore técnicas para tornar cada corrida mais fluida.")
+	cultivation_info_label.text = "\n".join(lines)
+
+	for tech_id in cultivation_upgrade_buttons.keys():
+		var b: Button = cultivation_upgrade_buttons[tech_id]
+		var data: Dictionary = TECHNIQUES[tech_id]
+		var level: int = tech_level(tech_id)
+		var max_level: int = int(data["max"])
+		var price: int = technique_price(tech_id)
+		var status: String = "Nível %d/%d" % [level, max_level]
+		if level >= max_level:
+			status = "Nível máximo"
+		var action: String = "MAX" if level >= max_level else "%d cristais" % price
+		b.text = "%s  •  %s\n%s  •  %s" % [str(data["name"]), status, str(data["desc"]), action]
+		if level >= max_level:
+			b.add_theme_stylebox_override("normal", make_button_style(Color(0.10, 0.23, 0.22, 0.86), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.62)))
+		else:
+			b.add_theme_stylebox_override("normal", make_button_style(Color(0.05, 0.16, 0.25, 0.78), Color(C_CELESTIAL.r, C_CELESTIAL.g, C_CELESTIAL.b, 0.40)))
+
+func upgrade_technique(tech_id: String) -> void:
+	if not TECHNIQUES.has(tech_id):
+		return
+	var data: Dictionary = TECHNIQUES[tech_id]
+	var level: int = tech_level(tech_id)
+	var max_level: int = int(data["max"])
+	if level >= max_level:
+		show_status("TÉCNICA NO MÁXIMO", C_GOLD)
+		return
+	var price: int = technique_price(tech_id)
+	if total_crystals < price:
+		show_status("CRISTAIS INSUFICIENTES", Color(1.0, 0.72, 0.72, 1.0))
+		flash_alpha = maxf(flash_alpha, 0.07)
+		return
+	total_crystals -= price
+	technique_levels[tech_id] = level + 1
+	save_game()
+	update_cultivation_ui()
+	show_status("TÉCNICA APRIMORADA", C_GOLD)
+	spawn_shockwave(player.position, C_GOLD, 38.0, 220.0, 0.58)
+
 func show_shop() -> void:
 	screen = "shop"
 	menu_layer.visible = false
 	result_layer.visible = false
 	shop_layer.visible = true
 	pause_layer.visible = false
+	cultivation_layer.visible = false
 	hud_layer.visible = false
 	update_shop_ui()
 
@@ -798,7 +948,7 @@ func move_lane(dir: int) -> void:
 func do_dash() -> void:
 	if dash_cooldown <= 0.0:
 		dash_timer = 0.18
-		dash_cooldown = 1.15
+		dash_cooldown = maxf(0.72, 1.15 - float(tech_level("dash")) * 0.08)
 		invulnerable_timer = maxf(invulnerable_timer, 0.2)
 		resonance_value = minf(100.0, resonance_value + 4.0)
 		flash_alpha = maxf(flash_alpha, 0.10)
@@ -929,7 +1079,7 @@ func collect_crystal(e: Dictionary) -> void:
 func collect_power(kind: String) -> void:
 	match kind:
 		"magnet":
-			magnet_timer = 6.0
+			magnet_timer = 6.0 + float(tech_level("jade")) * 0.65
 			show_status("CHAMADO DO JADE", C_JADE)
 		"shield":
 			invulnerable_timer = 5.0
@@ -975,10 +1125,20 @@ func calculate_run_missions() -> Array[String]:
 		missions.append("✓ Sustentou Fluxo x18")
 	return missions
 
+func calculate_xp_gain() -> int:
+	var gain: int = int(distance * 0.06)
+	gain += perfect_grazes * 9
+	gain += flow_activations * 24
+	gain += completed_run_missions.size() * 18
+	gain += int(max(combo, 1) * 0.8)
+	return max(gain, 8)
+
 func game_over() -> void:
 	screen = "result"
 	completed_run_missions = calculate_run_missions()
 	run_mission_bonus = completed_run_missions.size() * 75
+	last_xp_gain = calculate_xp_gain()
+	cultivation_xp += last_xp_gain
 	total_crystals += crystals_run + run_mission_bonus
 	best_distance = maxf(best_distance, distance)
 	save_game()
@@ -987,11 +1147,12 @@ func game_over() -> void:
 	menu_layer.visible = false
 	shop_layer.visible = false
 	pause_layer.visible = false
+	cultivation_layer.visible = false
 	var new_mark: String = "\nNova Marca de Ascensão!" if int(distance) >= int(best_distance) else ""
 	var mission_text: String = "Nenhuma missão concluída"
 	if completed_run_missions.size() > 0:
 		mission_text = "\n".join(completed_run_missions)
-	result_stats.text = "Distância: %d m\nPontuação: %d\nCristais da Corrida: %d\nBônus de Missões: +%d\nRessonâncias Perfeitas: %d\nEstados de Fluxo: %d\nMaior Fluxo: x%d\n%s\n\nMissões:\n%s\n\nTotal de Cristais: %d\nMarca de Ascensão: %d m" % [int(distance), score, crystals_run, run_mission_bonus, perfect_grazes, flow_activations, max(combo, 1), new_mark, mission_text, total_crystals, int(best_distance)]
+	result_stats.text = "Distância: %d m\nPontuação: %d\nCristais da Corrida: %d\nBônus de Missões: +%d\nXP de Cultivo: +%d\nRessonâncias Perfeitas: %d\nEstados de Fluxo: %d\nMaior Fluxo: x%d\n%s\n\nMissões:\n%s\n\nEstágio: %s\nTotal de Cristais: %d\nMarca de Ascensão: %d m" % [int(distance), score, crystals_run, run_mission_bonus, last_xp_gain, perfect_grazes, flow_activations, max(combo, 1), new_mark, mission_text, get_cultivation_stage_name(), total_crystals, int(best_distance)]
 	camera_shake = 17.0
 
 func show_status(text: String, color: Color) -> void:
@@ -1108,7 +1269,9 @@ func save_game() -> void:
 		"total_crystals": total_crystals,
 		"selected_skin": selected_skin,
 		"owned_skins": owned_skins,
-		"last_daily_reward": last_daily_reward
+		"last_daily_reward": last_daily_reward,
+		"cultivation_xp": cultivation_xp,
+		"technique_levels": technique_levels
 	}
 	var file: FileAccess = FileAccess.open(SAVE_PATH, FileAccess.WRITE)
 	if file != null:
@@ -1125,6 +1288,13 @@ func load_save() -> void:
 			total_crystals = int(parsed.get("total_crystals", 0))
 			selected_skin = str(parsed.get("selected_skin", "nucleo_errante"))
 			last_daily_reward = str(parsed.get("last_daily_reward", ""))
+			cultivation_xp = int(parsed.get("cultivation_xp", 0))
+			var loaded_techniques: Variant = parsed.get("technique_levels", {"dash": 0, "jade": 0, "flow": 0})
+			if typeof(loaded_techniques) == TYPE_DICTIONARY:
+				technique_levels = loaded_techniques
+			for required_tech in ["dash", "jade", "flow"]:
+				if not technique_levels.has(required_tech):
+					technique_levels[required_tech] = 0
 			var loaded_skins: Variant = parsed.get("owned_skins", {"nucleo_errante": true})
 			if typeof(loaded_skins) == TYPE_DICTIONARY:
 				owned_skins = loaded_skins
