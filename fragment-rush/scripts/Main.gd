@@ -1,7 +1,7 @@
 extends Node2D
 
 # Fragment Rush: Corrida dos Cristais
-# v1.1.1 - Reboot Visual Menu Pavilhao Nucleo
+# v1.1.2 - Neo Cultivation Visual
 # Runner mobile com atmosfera wuxia/cultivation: fluxo, ressonancia e ascensao.
 
 const SAVE_PATH: String = "user://fragment_rush_save.json"
@@ -429,22 +429,22 @@ func build_ui() -> void:
 	hud_layer.add_child(biome_label)
 
 	# Menu principal
-	menu_card = make_panel(Vector2(48, 132), Vector2(624, 790), Color(0.02, 0.08, 0.14, 0.38), Color(C_CELESTIAL.r, C_CELESTIAL.g, C_CELESTIAL.b, 0.22))
+	menu_card = make_panel(Vector2(48, 132), Vector2(624, 790), Color(0.02, 0.08, 0.14, 0.02), Color(C_CELESTIAL.r, C_CELESTIAL.g, C_CELESTIAL.b, 0.00))
 	menu_layer.add_child(menu_card)
-	title_label = make_label("FRAGMENT RUSH\nCorrida dos Cristais", 43, Vector2(0, 46), C_PEARL)
+	title_label = make_label("FRAGMENT RUSH\nCorrida dos Cristais", 42, Vector2(0, 18), C_PEARL)
 	title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title_label.size = Vector2(624, 118)
-	subtitle_label = make_label("Cultive o fluxo. Atravesse o céu fragmentado.", 20, Vector2(58, 170), Color(0.78, 0.95, 1.0, 1.0))
+	subtitle_label = make_label("Neo-cultivo cristalino em alta velocidade.", 19, Vector2(58, 140), Color(0.78, 0.95, 1.0, 0.92))
 	subtitle_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	subtitle_label.size = Vector2(508, 60)
-	best_label = make_label("", 18, Vector2(46, 248), Color(0.74, 0.92, 1.0, 0.92))
+	best_label = make_label("", 18, Vector2(46, 285), Color(0.74, 0.92, 1.0, 0.92))
 	best_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	best_label.size = Vector2(532, 74)
-	start_button = make_button("INICIAR CORRIDA", Vector2(96, 355), Vector2(432, 84))
-	shop_button = make_button("PAVILHÃO", Vector2(72, 470), Vector2(225, 66))
-	cultivation_button = make_button("NÚCLEO", Vector2(327, 470), Vector2(225, 66))
-	daily_button = make_button("ESSÊNCIA DIÁRIA", Vector2(116, 562), Vector2(392, 62))
-	help_button = make_button("COMO JOGAR", Vector2(166, 640), Vector2(292, 56))
+	start_button = make_button("INICIAR CORRIDA", Vector2(96, 430), Vector2(432, 84))
+	shop_button = make_button("PAVILHÃO", Vector2(72, 548), Vector2(225, 64))
+	cultivation_button = make_button("NÚCLEO", Vector2(327, 548), Vector2(225, 64))
+	daily_button = make_button("ESSÊNCIA DIÁRIA", Vector2(116, 635), Vector2(392, 60))
+	help_button = make_button("COMO JOGAR", Vector2(166, 715), Vector2(292, 54))
 	daily_button.add_theme_font_size_override("font_size", 18)
 	help_button.add_theme_font_size_override("font_size", 17)
 	start_button.pressed.connect(start_game)
@@ -480,7 +480,7 @@ func build_ui() -> void:
 		result_card.add_child(node)
 
 	# Pavilhão Celestial das Formas — vitrine holográfica
-	shop_card = make_panel(Vector2(34, 76), Vector2(652, 1078), Color(0.02, 0.08, 0.14, 0.42), Color(C_JADE.r, C_JADE.g, C_JADE.b, 0.24))
+	shop_card = make_panel(Vector2(34, 76), Vector2(652, 1078), Color(0.02, 0.08, 0.14, 0.02), Color(C_JADE.r, C_JADE.g, C_JADE.b, 0.00))
 	shop_layer.add_child(shop_card)
 	shop_title_label = make_label("PAVILHÃO CELESTIAL", 32, Vector2(0, 28), C_PEARL)
 	shop_title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -518,7 +518,7 @@ func build_ui() -> void:
 	shop_card.add_child(close_shop_button)
 
 	# Câmara do Núcleo — câmara visual de cultivo
-	cultivation_card = make_panel(Vector2(34, 76), Vector2(652, 1078), Color(0.02, 0.08, 0.14, 0.42), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.24))
+	cultivation_card = make_panel(Vector2(34, 76), Vector2(652, 1078), Color(0.02, 0.08, 0.14, 0.02), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.00))
 	cultivation_layer.add_child(cultivation_card)
 	cultivation_info_label = make_label("CÂMARA DO NÚCLEO", 32, Vector2(0, 28), C_PEARL)
 	cultivation_info_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -655,16 +655,16 @@ func make_button(text: String, pos: Vector2, size_btn: Vector2) -> Button:
 
 func make_button_style(bg: Color, border: Color) -> StyleBoxFlat:
 	var style: StyleBoxFlat = StyleBoxFlat.new()
-	style.bg_color = bg
-	style.border_color = border
-	style.set_border_width_all(2)
-	style.set_corner_radius_all(30)
-	style.shadow_color = Color(0.0, 0.0, 0.0, 0.38)
-	style.shadow_size = 18
+	style.bg_color = Color(bg.r, bg.g, bg.b, minf(bg.a, 0.52))
+	style.border_color = Color(border.r, border.g, border.b, minf(maxf(border.a, 0.18), 0.42))
+	style.set_border_width_all(1)
+	style.set_corner_radius_all(42)
+	style.shadow_color = Color(0.0, 0.0, 0.0, 0.20)
+	style.shadow_size = 8
 	style.set_content_margin(SIDE_TOP, 8.0)
 	style.set_content_margin(SIDE_BOTTOM, 8.0)
-	style.set_content_margin(SIDE_LEFT, 18.0)
-	style.set_content_margin(SIDE_RIGHT, 18.0)
+	style.set_content_margin(SIDE_LEFT, 20.0)
+	style.set_content_margin(SIDE_RIGHT, 20.0)
 	return style
 
 func create_background_layers() -> void:
@@ -1813,6 +1813,7 @@ func load_save() -> void:
 func _draw() -> void:
 	draw_cultivation_background()
 	draw_biome_overlay()
+	draw_neo_cultivation_shell()
 	draw_premium_menu_glow()
 	draw_result_glow()
 	draw_visual_reboot_showcases()
@@ -1848,6 +1849,89 @@ func draw_biome_overlay() -> void:
 		var gate_center: Vector2 = Vector2(VIEW_W * 0.5, 210.0)
 		draw_arc(gate_center, 155.0, PI * 1.05, PI * 1.95, 96, Color(accent.r, accent.g, accent.b, 0.16), 5.0, true)
 		draw_circle(gate_center, 84.0, Color(secondary.r, secondary.g, secondary.b, 0.035))
+
+func draw_capsule(center: Vector2, size: Vector2, color: Color) -> void:
+	var half: Vector2 = size * 0.5
+	var radius: float = size.y * 0.5
+	draw_rect(Rect2(center - Vector2(half.x - radius, half.y), Vector2(size.x - size.y, size.y)), color)
+	draw_circle(center - Vector2(half.x - radius, 0.0), radius, color)
+	draw_circle(center + Vector2(half.x - radius, 0.0), radius, color)
+
+func draw_holo_card(center: Vector2, size: Vector2, accent: Color, alpha: float) -> void:
+	draw_capsule(center + Vector2(0.0, 10.0), size + Vector2(16.0, 16.0), Color(0.0, 0.0, 0.0, alpha * 0.24))
+	draw_capsule(center, size, Color(0.025, 0.085, 0.130, alpha))
+	draw_capsule(center, Vector2(size.x + 2.0, size.y + 2.0), Color(accent.r, accent.g, accent.b, alpha * 0.045))
+	draw_line(center - Vector2(size.x * 0.34, size.y * 0.42), center + Vector2(size.x * 0.34, -size.y * 0.42), Color(accent.r, accent.g, accent.b, alpha * 0.18), 1.2)
+	draw_line(center - Vector2(size.x * 0.38, -size.y * 0.34), center + Vector2(size.x * 0.22, size.y * 0.34), Color(C_PEARL.r, C_PEARL.g, C_PEARL.b, alpha * 0.055), 1.0)
+
+func draw_neo_grid(accent: Color) -> void:
+	for i in range(9):
+		var y: float = 230.0 + float(i) * 74.0 + sin(pulse_time * 0.32 + float(i)) * 8.0
+		draw_line(Vector2(44.0, y), Vector2(VIEW_W - 44.0, y + sin(float(i)) * 18.0), Color(accent.r, accent.g, accent.b, 0.018), 1.0)
+	for i in range(6):
+		var x: float = 80.0 + float(i) * 112.0 + sin(pulse_time * 0.26 + float(i)) * 6.0
+		draw_line(Vector2(x, 160.0), Vector2(x + sin(float(i)) * 26.0, VIEW_H - 120.0), Color(C_PEARL.r, C_PEARL.g, C_PEARL.b, 0.012), 1.0)
+
+func draw_neo_cultivation_shell() -> void:
+	if screen != "menu" and screen != "shop" and screen != "cultivation":
+		return
+	var accent: Color = C_CELESTIAL
+	if screen == "shop":
+		accent = rarity_color_text(skin_rarity(selected_shop_skin))
+	elif screen == "cultivation":
+		accent = C_GOLD
+
+	draw_rect(Rect2(Vector2.ZERO, Vector2(VIEW_W, VIEW_H)), Color(0.010, 0.026, 0.043, 0.62))
+	draw_neo_grid(accent)
+
+	var top_center: Vector2 = Vector2(VIEW_W * 0.5, 130.0)
+	draw_circle(top_center, 310.0, Color(accent.r, accent.g, accent.b, 0.026))
+	draw_circle(top_center + Vector2(0.0, 160.0), 460.0, Color(C_JADE.r, C_JADE.g, C_JADE.b, 0.012))
+
+	if screen == "menu":
+		draw_neo_menu_shell(accent)
+	elif screen == "shop":
+		draw_neo_shop_shell(accent)
+	else:
+		draw_neo_core_shell(accent)
+
+func draw_neo_menu_shell(accent: Color) -> void:
+	var center: Vector2 = Vector2(VIEW_W * 0.5, 326.0)
+	draw_holo_card(Vector2(VIEW_W * 0.5, 650.0), Vector2(570.0, 330.0), accent, 0.20)
+	draw_capsule(Vector2(VIEW_W * 0.5, 855.0), Vector2(585.0, 118.0), Color(0.025, 0.085, 0.130, 0.26))
+	draw_line(Vector2(88.0, 855.0), Vector2(VIEW_W - 88.0, 855.0), Color(accent.r, accent.g, accent.b, 0.18), 1.2)
+	for i in range(5):
+		var r: float = 160.0 + float(i) * 26.0
+		var a: float = pulse_time * (0.12 + float(i) * 0.025)
+		draw_arc(center, r, a, a + PI * 1.24, 108, Color(accent.r, accent.g, accent.b, 0.040 - float(i) * 0.004), 1.6, true)
+	draw_circle(center, 110.0, Color(0.0, 0.0, 0.0, 0.16))
+	draw_line(Vector2(160.0, 430.0), Vector2(560.0, 430.0), Color(C_PEARL.r, C_PEARL.g, C_PEARL.b, 0.045), 1.0)
+
+func draw_neo_shop_shell(accent: Color) -> void:
+	var center: Vector2 = Vector2(VIEW_W * 0.5, 310.0)
+	draw_holo_card(Vector2(VIEW_W * 0.5, 305.0), Vector2(610.0, 465.0), accent, 0.18)
+	draw_holo_card(Vector2(VIEW_W * 0.5, 610.0), Vector2(545.0, 148.0), accent, 0.16)
+	draw_capsule(Vector2(VIEW_W * 0.5, 845.0), Vector2(600.0, 265.0), Color(0.020, 0.070, 0.115, 0.28))
+	for i in range(5):
+		var x: float = 115.0 + float(i) * 122.0
+		draw_circle(Vector2(x, 842.0), 47.0, Color(accent.r, accent.g, accent.b, 0.035))
+		draw_arc(Vector2(x, 842.0), 51.0, pulse_time * 0.25 + float(i), pulse_time * 0.25 + float(i) + PI * 1.15, 48, Color(accent.r, accent.g, accent.b, 0.12), 1.5, true)
+	draw_circle(center, 182.0, Color(accent.r, accent.g, accent.b, 0.023))
+	draw_line(Vector2(110.0, 548.0), Vector2(610.0, 548.0), Color(C_PEARL.r, C_PEARL.g, C_PEARL.b, 0.045), 1.0)
+
+func draw_neo_core_shell(accent: Color) -> void:
+	var center: Vector2 = Vector2(VIEW_W * 0.5, 318.0)
+	draw_holo_card(center, Vector2(612.0, 505.0), accent, 0.17)
+	draw_holo_card(Vector2(VIEW_W * 0.5, 602.0), Vector2(540.0, 140.0), C_CELESTIAL, 0.14)
+	draw_capsule(Vector2(VIEW_W * 0.5, 845.0), Vector2(600.0, 280.0), Color(0.020, 0.070, 0.115, 0.26))
+	var tech_positions: Array[Vector2] = [Vector2(138.0, 832.0), Vector2(360.0, 856.0), Vector2(582.0, 832.0)]
+	for i in range(tech_positions.size()):
+		var p: Vector2 = tech_positions[i]
+		var c: Color = [C_CELESTIAL, C_JADE, C_GOLD][i]
+		draw_circle(p, 72.0, Color(c.r, c.g, c.b, 0.045))
+		draw_arc(p, 78.0, -pulse_time * 0.16 + float(i), -pulse_time * 0.16 + float(i) + PI * 1.40, 64, Color(c.r, c.g, c.b, 0.13), 2.0, true)
+	draw_line(Vector2(160.0, 576.0), Vector2(560.0, 576.0), Color(accent.r, accent.g, accent.b, 0.10), 1.1)
+
 
 func draw_visual_reboot_showcases() -> void:
 	if screen == "menu":
@@ -1953,14 +2037,14 @@ func draw_result_glow() -> void:
 func draw_premium_menu_glow() -> void:
 	if screen != "menu":
 		return
-	var center: Vector2 = Vector2(VIEW_W * 0.5, 500.0)
-	var glow_a: float = 0.06 + 0.025 * sin(pulse_time * 1.1)
-	draw_circle(center, 330.0, Color(C_CELESTIAL.r, C_CELESTIAL.g, C_CELESTIAL.b, glow_a))
-	draw_circle(center + Vector2(0.0, 15.0), 210.0, Color(C_JADE.r, C_JADE.g, C_JADE.b, glow_a * 0.72))
-	for i in range(4):
-		var radius: float = 170.0 + float(i) * 42.0 + sin(pulse_time * 0.9 + float(i)) * 4.0
-		var alpha: float = 0.035 - float(i) * 0.005
-		draw_arc(center, radius, pulse_time * 0.10 + float(i), PI * 1.45 + pulse_time * 0.10 + float(i), 92, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, alpha), 2.0, true)
+	var center: Vector2 = Vector2(VIEW_W * 0.5, 355.0)
+	var glow_a: float = 0.030 + 0.014 * sin(pulse_time * 1.1)
+	draw_circle(center, 360.0, Color(C_CELESTIAL.r, C_CELESTIAL.g, C_CELESTIAL.b, glow_a))
+	draw_circle(center + Vector2(0.0, 24.0), 220.0, Color(C_JADE.r, C_JADE.g, C_JADE.b, glow_a * 0.66))
+	for i in range(5):
+		var radius: float = 145.0 + float(i) * 34.0 + sin(pulse_time * 0.9 + float(i)) * 4.0
+		var alpha: float = 0.020 - float(i) * 0.002
+		draw_arc(center, radius, pulse_time * 0.10 + float(i), PI * 1.45 + pulse_time * 0.10 + float(i), 92, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, alpha), 1.4, true)
 
 func draw_speed_lines() -> void:
 	if screen != "game":
