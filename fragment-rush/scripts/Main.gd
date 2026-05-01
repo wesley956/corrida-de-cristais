@@ -1,7 +1,7 @@
 extends Node2D
 
 # Fragment Rush: Corrida dos Cristais
-# v0.5 - Flow State + Pause + Gameplay Polish
+# v0.6 - Pavilhao Funcional + Missoes
 # Runner mobile com atmosfera wuxia/cultivation: fluxo, ressonancia e ascensao.
 
 const SAVE_PATH: String = "user://fragment_rush_save.json"
@@ -55,6 +55,8 @@ var start_button: Button
 var shop_button: Button
 var close_shop_button: Button
 var shop_info_label: Label
+var daily_button: Button
+var shop_skin_buttons: Dictionary = {}
 
 var result_title: Label
 var result_stats: Label
@@ -93,6 +95,17 @@ var best_distance: float = 0.0
 var total_crystals: int = 0
 var selected_skin: String = "nucleo_errante"
 var owned_skins: Dictionary = {"nucleo_errante": true}
+var last_daily_reward: String = ""
+var run_mission_bonus: int = 0
+var completed_run_missions: Array[String] = []
+
+const SKINS: Dictionary = {
+	"nucleo_errante": {"name": "Núcleo Errante", "price": 0, "desc": "Forma inicial equilibrada."},
+	"semente_jade": {"name": "Semente de Jade", "price": 1000, "desc": "Cultivo sereno e energia verde."},
+	"orbe_celestial": {"name": "Orbe Celestial", "price": 2500, "desc": "Pureza luminosa do céu fragmentado."},
+	"coracao_nebular": {"name": "Coração Nebular", "price": 4000, "desc": "Ressonância roxa e misteriosa."},
+	"essencia_dourada": {"name": "Essência Dourada", "price": 6500, "desc": "Forma rara de ascensão cristalina."}
+}
 
 var spawn_timer: float = 0.0
 var crystal_spawn_timer: float = 0.0
@@ -286,11 +299,14 @@ func build_ui() -> void:
 	best_label = make_label("", 22, Vector2(0, 260), Color(0.74, 0.92, 1.0, 0.92))
 	best_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	best_label.size = Vector2(624, 56)
-	start_button = make_button("INICIAR CORRIDA", Vector2(102, 388), Vector2(420, 84))
-	shop_button = make_button("PAVILHÃO DAS FORMAS", Vector2(116, 494), Vector2(392, 72))
+	start_button = make_button("INICIAR CORRIDA", Vector2(102, 368), Vector2(420, 84))
+	shop_button = make_button("PAVILHÃO DAS FORMAS", Vector2(116, 470), Vector2(392, 72))
+	daily_button = make_button("RECEBER ESSÊNCIA DIÁRIA", Vector2(116, 558), Vector2(392, 68))
+	daily_button.add_theme_font_size_override("font_size", 19)
 	start_button.pressed.connect(start_game)
 	shop_button.pressed.connect(show_shop)
-	for node in [title_label, subtitle_label, best_label, start_button, shop_button]:
+	daily_button.pressed.connect(claim_daily_reward)
+	for node in [title_label, subtitle_label, best_label, start_button, shop_button, daily_button]:
 		menu_card.add_child(node)
 
 	# Resultado
@@ -299,8 +315,8 @@ func build_ui() -> void:
 	result_title = make_label("FLUXO INTERROMPIDO", 38, Vector2(0, 48), C_PEARL)
 	result_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	result_title.size = Vector2(604, 70)
-	result_stats = make_label("", 23, Vector2(56, 156), Color(0.86, 0.96, 1.0, 1.0))
-	result_stats.size = Vector2(492, 360)
+	result_stats = make_label("", 20, Vector2(56, 142), Color(0.86, 0.96, 1.0, 1.0))
+	result_stats.size = Vector2(492, 430)
 	restart_button = make_button("CULTIVAR NOVAMENTE", Vector2(92, 620), Vector2(420, 78))
 	menu_button = make_button("VOLTAR À TRILHA", Vector2(132, 722), Vector2(340, 70))
 	restart_button.pressed.connect(start_game)
@@ -311,11 +327,21 @@ func build_ui() -> void:
 	# Loja/Pavilhão
 	shop_card = make_panel(Vector2(48, 110), Vector2(624, 1040), Color(0.03, 0.11, 0.19, 0.68), Color(C_JADE.r, C_JADE.g, C_JADE.b, 0.24))
 	shop_layer.add_child(shop_card)
-	shop_info_label = make_label("", 22, Vector2(40, 42), C_PEARL)
-	shop_info_label.size = Vector2(544, 860)
+	shop_info_label = make_label("", 21, Vector2(40, 34), C_PEARL)
+	shop_info_label.size = Vector2(544, 250)
+	shop_card.add_child(shop_info_label)
+
+	var skin_order: Array[String] = ["nucleo_errante", "semente_jade", "orbe_celestial", "coracao_nebular", "essencia_dourada"]
+	for i in range(skin_order.size()):
+		var skin_id: String = skin_order[i]
+		var b: Button = make_button("", Vector2(54, 286 + i * 108), Vector2(516, 88))
+		b.add_theme_font_size_override("font_size", 18)
+		b.pressed.connect(func() -> void: buy_or_select_skin(skin_id))
+		shop_skin_buttons[skin_id] = b
+		shop_card.add_child(b)
+
 	close_shop_button = make_button("VOLTAR", Vector2(162, 930), Vector2(300, 70))
 	close_shop_button.pressed.connect(show_menu)
-	shop_card.add_child(shop_info_label)
 	shop_card.add_child(close_shop_button)
 
 	# Tela de pausa
@@ -510,6 +536,8 @@ func start_game() -> void:
 	combo_pop_timer = 0.0
 	flow_timer = 0.0
 	flow_activations = 0
+	run_mission_bonus = 0
+	completed_run_missions.clear()
 	player_lane = 1
 	target_x = screen_lane_x(player_lane)
 	player.position = Vector2(target_x, PLAYER_Y)
@@ -545,6 +573,7 @@ func show_menu() -> void:
 	pause_layer.visible = false
 	hud_layer.visible = false
 	best_label.text = "Marca de Ascensão: %d m\nCristais Espirituais: %d" % [int(best_distance), total_crystals]
+	update_daily_button()
 
 func pause_game() -> void:
 	if screen != "game":
@@ -585,26 +614,95 @@ func show_shop() -> void:
 	shop_layer.visible = true
 	pause_layer.visible = false
 	hud_layer.visible = false
+	update_shop_ui()
+
+func update_shop_ui() -> void:
+	var selected_name: String = str(SKINS.get(selected_skin, {}).get("name", "Núcleo Errante"))
 	var lines: Array[String] = []
 	lines.append("PAVILHÃO DAS FORMAS")
 	lines.append("")
 	lines.append("Cristais Espirituais: %d" % total_crystals)
+	lines.append("Forma atual: %s" % selected_name)
 	lines.append("")
-	lines.append("✓ Núcleo Errante — liberado")
-	lines.append("• Semente de Jade — 1000 cristais")
-	lines.append("• Orbe Celestial — 2500 cristais")
-	lines.append("• Coração Nebular — 4000 cristais")
-	lines.append("• Essência Dourada — evento raro")
-	lines.append("")
-	lines.append("Técnicas em preparo:")
-	lines.append("• seleção visual de formas")
-	lines.append("• rastros espirituais")
-	lines.append("• baús de essência")
-	lines.append("• eventos da Trilha do Céu Fragmentado")
-	lines.append("")
-	lines.append("Regra do jogo:")
-	lines.append("Quanto mais perto do caos, maior a ressonância.")
+	lines.append("Escolha, compre e cultive novas formas.")
 	shop_info_label.text = "\n".join(lines)
+
+	for skin_id in shop_skin_buttons.keys():
+		var b: Button = shop_skin_buttons[skin_id]
+		var data: Dictionary = SKINS[skin_id]
+		var skin_name: String = str(data["name"])
+		var price: int = int(data["price"])
+		var owned: bool = bool(owned_skins.get(skin_id, false))
+		var selected: bool = skin_id == selected_skin
+		var suffix: String = ""
+		if selected:
+			suffix = "  •  EQUIPADO"
+		elif owned:
+			suffix = "  •  USAR"
+		else:
+			suffix = "  •  %d cristais" % price
+		b.text = "%s\n%s" % [skin_name + suffix, str(data["desc"])]
+		if selected:
+			b.add_theme_stylebox_override("normal", make_button_style(Color(0.10, 0.23, 0.22, 0.86), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.62)))
+		elif owned:
+			b.add_theme_stylebox_override("normal", make_button_style(Color(0.05, 0.18, 0.24, 0.82), Color(C_JADE.r, C_JADE.g, C_JADE.b, 0.48)))
+		else:
+			b.add_theme_stylebox_override("normal", make_button_style(Color(0.04, 0.12, 0.20, 0.76), Color(C_CELESTIAL.r, C_CELESTIAL.g, C_CELESTIAL.b, 0.28)))
+
+func buy_or_select_skin(skin_id: String) -> void:
+	if not SKINS.has(skin_id):
+		return
+	var data: Dictionary = SKINS[skin_id]
+	var owned: bool = bool(owned_skins.get(skin_id, false))
+	if owned:
+		selected_skin = skin_id
+		player_core.color = skin_color(selected_skin)
+		save_game()
+		update_shop_ui()
+		show_status("FORMA SINTONIZADA", C_JADE)
+		return
+
+	var price: int = int(data["price"])
+	if total_crystals >= price:
+		total_crystals -= price
+		owned_skins[skin_id] = true
+		selected_skin = skin_id
+		player_core.color = skin_color(selected_skin)
+		save_game()
+		update_shop_ui()
+		show_status("NOVA FORMA DESPERTA", C_GOLD)
+		spawn_shockwave(player.position, C_GOLD, 45.0, 230.0, 0.64)
+	else:
+		show_status("CRISTAIS INSUFICIENTES", Color(1.0, 0.72, 0.72, 1.0))
+		flash_alpha = maxf(flash_alpha, 0.07)
+
+func current_day_key() -> String:
+	var date: Dictionary = Time.get_date_dict_from_system()
+	return "%04d-%02d-%02d" % [int(date["year"]), int(date["month"]), int(date["day"])]
+
+func update_daily_button() -> void:
+	if daily_button == null:
+		return
+	var today: String = current_day_key()
+	if last_daily_reward == today:
+		daily_button.text = "ESSÊNCIA DIÁRIA RECEBIDA"
+		daily_button.disabled = true
+	else:
+		daily_button.text = "RECEBER ESSÊNCIA DIÁRIA"
+		daily_button.disabled = false
+
+func claim_daily_reward() -> void:
+	var today: String = current_day_key()
+	if last_daily_reward == today:
+		update_daily_button()
+		return
+	last_daily_reward = today
+	total_crystals += 180
+	save_game()
+	update_daily_button()
+	best_label.text = "Marca de Ascensão: %d m\nCristais Espirituais: %d" % [int(best_distance), total_crystals]
+	show_status("+180 ESSÊNCIA DIÁRIA", C_GOLD)
+	spawn_shockwave(player.position, C_GOLD, 40.0, 250.0, 0.65)
 
 func update_game(delta: float, real_delta: float) -> void:
 	run_time += real_delta
@@ -863,9 +961,25 @@ func perfect_graze() -> void:
 		var particle_pos: Vector2 = player.position + Vector2(rng.randf_range(-46.0, 46.0), rng.randf_range(-46.0, 46.0))
 		spawn_particle(particle_pos, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.86), 8, 0.45)
 
+func calculate_run_missions() -> Array[String]:
+	var missions: Array[String] = []
+	if int(distance) >= 500:
+		missions.append("✓ Atravessou 500m da Trilha")
+	if crystals_run >= 60:
+		missions.append("✓ Coletou 60 Cristais Espirituais")
+	if perfect_grazes >= 5:
+		missions.append("✓ Alcançou 5 Ressonâncias Perfeitas")
+	if flow_activations >= 1:
+		missions.append("✓ Entrou em Estado de Fluxo")
+	if combo >= 18:
+		missions.append("✓ Sustentou Fluxo x18")
+	return missions
+
 func game_over() -> void:
 	screen = "result"
-	total_crystals += crystals_run
+	completed_run_missions = calculate_run_missions()
+	run_mission_bonus = completed_run_missions.size() * 75
+	total_crystals += crystals_run + run_mission_bonus
 	best_distance = maxf(best_distance, distance)
 	save_game()
 	hud_layer.visible = false
@@ -874,7 +988,10 @@ func game_over() -> void:
 	shop_layer.visible = false
 	pause_layer.visible = false
 	var new_mark: String = "\nNova Marca de Ascensão!" if int(distance) >= int(best_distance) else ""
-	result_stats.text = "Distância: %d m\nPontuação: %d\nCristais Espirituais: %d\nRessonâncias Perfeitas: %d\nEstados de Fluxo: %d\nMaior Fluxo: x%d\n%s\n\nTotal de Cristais: %d\nMarca de Ascensão: %d m" % [int(distance), score, crystals_run, perfect_grazes, flow_activations, max(combo, 1), new_mark, total_crystals, int(best_distance)]
+	var mission_text: String = "Nenhuma missão concluída"
+	if completed_run_missions.size() > 0:
+		mission_text = "\n".join(completed_run_missions)
+	result_stats.text = "Distância: %d m\nPontuação: %d\nCristais da Corrida: %d\nBônus de Missões: +%d\nRessonâncias Perfeitas: %d\nEstados de Fluxo: %d\nMaior Fluxo: x%d\n%s\n\nMissões:\n%s\n\nTotal de Cristais: %d\nMarca de Ascensão: %d m" % [int(distance), score, crystals_run, run_mission_bonus, perfect_grazes, flow_activations, max(combo, 1), new_mark, mission_text, total_crystals, int(best_distance)]
 	camera_shake = 17.0
 
 func show_status(text: String, color: Color) -> void:
@@ -990,7 +1107,8 @@ func save_game() -> void:
 		"best_distance": best_distance,
 		"total_crystals": total_crystals,
 		"selected_skin": selected_skin,
-		"owned_skins": owned_skins
+		"owned_skins": owned_skins,
+		"last_daily_reward": last_daily_reward
 	}
 	var file: FileAccess = FileAccess.open(SAVE_PATH, FileAccess.WRITE)
 	if file != null:
@@ -1006,9 +1124,13 @@ func load_save() -> void:
 			best_distance = float(parsed.get("best_distance", 0.0))
 			total_crystals = int(parsed.get("total_crystals", 0))
 			selected_skin = str(parsed.get("selected_skin", "nucleo_errante"))
+			last_daily_reward = str(parsed.get("last_daily_reward", ""))
 			var loaded_skins: Variant = parsed.get("owned_skins", {"nucleo_errante": true})
 			if typeof(loaded_skins) == TYPE_DICTIONARY:
 				owned_skins = loaded_skins
+			owned_skins["nucleo_errante"] = true
+			if not bool(owned_skins.get(selected_skin, false)):
+				selected_skin = "nucleo_errante"
 
 func _draw() -> void:
 	draw_cultivation_background()
