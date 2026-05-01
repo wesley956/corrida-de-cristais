@@ -1,7 +1,7 @@
 extends Node2D
 
 # Fragment Rush: Corrida dos Cristais
-# v1.3 - Formas e Rastros Premium
+# v1.3.1 - Corrige Visual das Formas na Corrida
 # Runner mobile com atmosfera wuxia/cultivation: fluxo, ressonancia e ascensao.
 
 const SAVE_PATH: String = "user://fragment_rush_save.json"
@@ -107,6 +107,7 @@ var mountains: Array[Dictionary] = []
 var particles: Array[Dictionary] = []
 var shockwaves: Array[Dictionary] = []
 var afterimages: Array[Dictionary] = []
+var skin_trails: Array[Dictionary] = []
 
 var player_lane: int = 1
 var target_x: float = 0.0
@@ -350,6 +351,7 @@ func build_game_nodes() -> void:
 	player_core.polygon = make_diamond(35.0, 48.0)
 	player_core.color = skin_color(selected_skin)
 	player.add_child(player_core)
+	update_player_skin_visuals()
 
 func make_diamond(width: float, height: float) -> PackedVector2Array:
 	return PackedVector2Array([
@@ -358,6 +360,59 @@ func make_diamond(width: float, height: float) -> PackedVector2Array:
 		Vector2(0.0, height),
 		Vector2(-width, 0.0)
 	])
+
+func make_skin_polygon(skin_id: String, width: float, height: float) -> PackedVector2Array:
+	var variant: int = skin_shape_variant(skin_id)
+	if variant == 0:
+		return make_diamond(width, height)
+
+	var sides: int = 6
+	if variant == 1:
+		sides = 7
+	elif variant == 2:
+		sides = 8
+	elif variant == 3:
+		sides = 5
+	elif variant >= 4:
+		sides = 10
+
+	var pts: PackedVector2Array = PackedVector2Array()
+	for i: int in range(sides):
+		var a: float = TAU * float(i) / float(sides) - PI * 0.5
+		var even: bool = i % 2 == 0
+		var rx: float = width * (1.05 if even else 0.70)
+		var ry: float = height * (1.00 if even else 0.62)
+		if variant == 1:
+			rx = width * (0.92 if even else 0.58)
+			ry = height * (0.96 if even else 0.70)
+		elif variant == 2:
+			rx = width * (1.10 if even else 0.46)
+			ry = height * (1.08 if even else 0.52)
+		elif variant == 3:
+			rx = width * (1.18 if even else 0.58)
+			ry = height * (0.92 if even else 0.70)
+		elif variant >= 4:
+			rx = width * (1.22 if even else 0.72)
+			ry = height * (1.06 if even else 0.72)
+		pts.append(Vector2(cos(a) * rx, sin(a) * ry))
+	return pts
+
+func update_player_skin_visuals() -> void:
+	if player_core == null or player_glow == null or player_ring == null:
+		return
+	var base_c: Color = skin_color(selected_skin)
+	var secondary_c: Color = skin_secondary_color(selected_skin)
+	var variant: int = skin_shape_variant(selected_skin)
+	var power: float = skin_rarity_power(selected_skin)
+
+	player_core.polygon = make_skin_polygon(selected_skin, 35.0 + float(variant) * 1.8, 48.0 + float(variant) * 2.0)
+	player_core.color = Color(base_c.r, base_c.g, base_c.b, 0.92)
+
+	player_glow.polygon = make_skin_polygon(selected_skin, 58.0 + float(variant) * 2.8, 66.0 + float(variant) * 3.0)
+	player_glow.color = Color(secondary_c.r, secondary_c.g, secondary_c.b, 0.20 + minf(0.16, (power - 1.0) * 0.12))
+
+	player_ring.polygon = make_skin_polygon(selected_skin, 76.0 + float(variant) * 3.6, 82.0 + float(variant) * 3.8)
+	player_ring.color = Color(base_c.r, base_c.g, base_c.b, 0.10 + minf(0.14, (power - 1.0) * 0.08))
 
 func build_ui() -> void:
 	hud_layer = CanvasLayer.new()
@@ -786,6 +841,7 @@ func start_game() -> void:
 	particles.clear()
 	shockwaves.clear()
 	afterimages.clear()
+	skin_trails.clear()
 	flash_alpha = 0.0
 	combo_pop_timer = 0.0
 	flow_timer = 0.0
@@ -1357,7 +1413,7 @@ func buy_or_select_skin(skin_id: String) -> void:
 		total_crystals -= price
 		owned_skins[skin_id] = true
 		selected_skin = skin_id
-		player_core.color = skin_color(selected_skin)
+		update_player_skin_visuals()
 		save_game()
 		update_shop_ui()
 		trigger_form_unlock(skin_id)
@@ -1444,38 +1500,45 @@ func get_next_unlock_hint() -> String:
 
 func spawn_skin_trail(real_delta: float) -> void:
 	var base_c: Color = skin_color(selected_skin)
-	var secondary: Color = skin_secondary_color(selected_skin)
+	var secondary_c: Color = skin_secondary_color(selected_skin)
 	var variant: int = skin_shape_variant(selected_skin)
-	var chance: float = 0.26 + float(variant) * 0.055
+	var chance: float = 0.70 + float(variant) * 0.055
 	if flow_timer > 0.0:
-		chance += 0.20
+		chance = 1.0
 	if rng.randf() > chance:
 		return
 
-	var behind: Vector2 = player.position + Vector2(rng.randf_range(-34.0, 34.0), rng.randf_range(42.0, 88.0))
+	var offset_x: float = rng.randf_range(-18.0, 18.0)
+	var trail_pos: Vector2 = player.position + Vector2(offset_x, rng.randf_range(46.0, 86.0))
+	var duration: float = 0.38 + float(variant) * 0.035
+	var size: float = 18.0 + float(variant) * 3.5
+	var trail: Dictionary = {
+		"pos": trail_pos,
+		"start_pos": player.position + Vector2(offset_x * 0.35, 16.0),
+		"color": base_c,
+		"secondary": secondary_c,
+		"variant": variant,
+		"duration": duration,
+		"age": 0.0,
+		"size": size,
+		"rot": player.rotation + rng.randf_range(-0.18, 0.18)
+	}
+	skin_trails.append(trail)
+	if skin_trails.size() > 54:
+		skin_trails.remove_at(0)
+
+	# partículas extras mais visíveis, por assinatura da forma
 	match variant:
 		1:
-			# Jade: fios suaves e partículas orgânicas
-			spawn_particle(behind, Color(base_c.r, base_c.g, base_c.b, 0.46), 3, 0.46)
-			if rng.randf() < 0.45:
-				spawn_particle(behind + Vector2(rng.randf_range(-18.0, 18.0), rng.randf_range(-12.0, 12.0)), Color(secondary.r, secondary.g, secondary.b, 0.34), 2, 0.52)
+			spawn_particle(trail_pos, Color(base_c.r, base_c.g, base_c.b, 0.50), 2, 0.42)
 		2:
-			# Celestial: brilho branco/azul limpo
-			spawn_particle(behind, Color(secondary.r, secondary.g, secondary.b, 0.52), 3, 0.38)
-			if rng.randf() < 0.30:
-				spawn_afterimage(player.position + Vector2(0.0, 22.0), secondary, 0.20)
+			spawn_particle(trail_pos, Color(secondary_c.r, secondary_c.g, secondary_c.b, 0.58), 2, 0.36)
 		3:
-			# Nebular: névoa roxa profunda
-			spawn_particle(behind, Color(base_c.r, base_c.g, base_c.b, 0.34), 5, 0.62)
-			if rng.randf() < 0.26:
-				spawn_particle(behind + Vector2(rng.randf_range(-36.0, 36.0), rng.randf_range(-10.0, 18.0)), Color(0.20, 0.12, 0.34, 0.30), 6, 0.72)
+			spawn_particle(trail_pos, Color(base_c.r, base_c.g, base_c.b, 0.44), 3, 0.62)
 		4:
-			# Dourada: faíscas e selos de ascensão
-			spawn_particle(behind, Color(base_c.r, base_c.g, base_c.b, 0.58), 4, 0.42)
-			if rng.randf() < 0.38:
-				spawn_shockwave(behind, base_c, 8.0, 46.0, 0.24)
+			spawn_particle(trail_pos, Color(base_c.r, base_c.g, base_c.b, 0.62), 3, 0.42)
 		_:
-			spawn_particle(behind, Color(base_c.r, base_c.g, base_c.b, 0.34), 2, 0.34)
+			spawn_particle(trail_pos, Color(base_c.r, base_c.g, base_c.b, 0.38), 1, 0.34)
 
 func update_game(delta: float, real_delta: float) -> void:
 	run_time += real_delta
@@ -1514,9 +1577,11 @@ func update_game(delta: float, real_delta: float) -> void:
 	var dash_scale: float = 0.14 if dash_timer > 0.0 else 0.0
 	var flow_scale: float = 0.08 if flow_timer > 0.0 else 0.0
 	player.scale = Vector2.ONE * (1.0 + sin(run_time * 9.0) * 0.025 + dash_scale + flow_scale)
-	player_core.color = skin_color(selected_skin)
-	player_glow.color = Color(C_CELESTIAL.r, C_CELESTIAL.g, C_CELESTIAL.b, 0.22 + clampf(resonance_value / 100.0, 0.0, 0.18))
-	player_ring.color = Color(C_JADE.r, C_JADE.g, C_JADE.b, 0.10 + clampf(resonance_value / 120.0, 0.0, 0.20))
+	update_player_skin_visuals()
+	var visual_c: Color = skin_color(selected_skin)
+	var visual_s: Color = skin_secondary_color(selected_skin)
+	player_glow.color = Color(visual_s.r, visual_s.g, visual_s.b, 0.22 + clampf(resonance_value / 100.0, 0.0, 0.22))
+	player_ring.color = Color(visual_c.r, visual_c.g, visual_c.b, 0.10 + clampf(resonance_value / 120.0, 0.0, 0.22))
 	if dash_timer > 0.0:
 		spawn_particle(player.position, Color(C_JADE.r, C_JADE.g, C_JADE.b, 0.82), 9, 0.42)
 		if rng.randf() < 0.55:
@@ -1905,6 +1970,18 @@ func update_impact_fx(delta: float) -> void:
 	for idx in remove_afterimages:
 		afterimages.remove_at(idx)
 
+	var remove_skin_trails: Array[int] = []
+	for i: int in range(skin_trails.size()):
+		var tr: Dictionary = skin_trails[i]
+		var tr_age: float = float(tr["age"]) + delta
+		tr["age"] = tr_age
+		skin_trails[i] = tr
+		if tr_age >= float(tr["duration"]):
+			remove_skin_trails.append(i)
+	remove_skin_trails.reverse()
+	for idx: int in remove_skin_trails:
+		skin_trails.remove_at(idx)
+
 func spawn_shockwave(pos: Vector2, color: Color, start_radius: float, end_radius: float, duration: float) -> void:
 	var shockwave: Dictionary = {
 		"pos": pos,
@@ -2060,6 +2137,7 @@ func _draw() -> void:
 	draw_speed_lines()
 	draw_afterimages()
 	draw_entities()
+	draw_skin_trails()
 	draw_particles()
 	draw_shockwaves()
 	draw_player_aura()
@@ -2498,6 +2576,42 @@ func draw_entities() -> void:
 			draw_powerup(p, str(e.get("kind", "")), rot)
 		else:
 			draw_obstacle_by_kind(p, str(e.get("kind", "")), rot)
+
+func draw_skin_trails() -> void:
+	for tr in skin_trails:
+		var age: float = float(tr["age"])
+		var duration: float = maxf(0.001, float(tr["duration"]))
+		var t: float = clampf(age / duration, 0.0, 1.0)
+		var alpha: float = (1.0 - t) * 0.55
+		var p: Vector2 = tr["pos"]
+		var start_p: Vector2 = tr["start_pos"]
+		var c: Color = tr["color"]
+		var secondary_c: Color = tr["secondary"]
+		var variant: int = int(tr["variant"])
+		var size_v: float = float(tr["size"]) * (1.0 - t * 0.52)
+		var rot_v: float = float(tr["rot"]) + t * 0.35
+
+		draw_line(start_p, p, Color(c.r, c.g, c.b, alpha * 0.42), 6.0 * (1.0 - t) + 1.0)
+		draw_line(start_p + Vector2(0.0, 10.0), p + Vector2(0.0, 26.0), Color(secondary_c.r, secondary_c.g, secondary_c.b, alpha * 0.22), 3.0 * (1.0 - t) + 1.0)
+
+		match variant:
+			1:
+				draw_arc(p, size_v * 1.45, rot_v, rot_v + PI * 1.25, 48, Color(c.r, c.g, c.b, alpha * 0.58), 2.0, true)
+				draw_circle(p, size_v * 0.34, Color(secondary_c.r, secondary_c.g, secondary_c.b, alpha * 0.42))
+			2:
+				draw_arc(p, size_v * 1.75, rot_v, rot_v + PI * 1.60, 64, Color(C_PEARL.r, C_PEARL.g, C_PEARL.b, alpha * 0.44), 1.8, true)
+				draw_circle(p, size_v * 0.28, Color(secondary_c.r, secondary_c.g, secondary_c.b, alpha * 0.62))
+			3:
+				draw_circle(p, size_v * 1.30, Color(c.r, c.g, c.b, alpha * 0.13))
+				draw_circle(p + Vector2(sin(pulse_time + age) * 10.0, cos(pulse_time + age) * 7.0), size_v * 0.52, Color(secondary_c.r, secondary_c.g, secondary_c.b, alpha * 0.30))
+			4:
+				draw_arc(p, size_v * 1.60, rot_v, rot_v + TAU * 0.86, 64, Color(c.r, c.g, c.b, alpha * 0.66), 2.6, true)
+				for j: int in range(3):
+					var a: float = rot_v + float(j) * TAU / 3.0
+					draw_circle(p + Vector2(cos(a), sin(a)) * size_v * 0.74, 2.4, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, alpha * 0.82))
+			_:
+				draw_circle(p, size_v * 0.46, Color(c.r, c.g, c.b, alpha * 0.50))
+				draw_arc(p, size_v * 1.2, rot_v, rot_v + PI, 40, Color(c.r, c.g, c.b, alpha * 0.30), 1.5, true)
 
 func draw_particles() -> void:
 	for part in particles:
