@@ -1,7 +1,7 @@
 extends Node2D
 
 # Fragment Rush: Corrida dos Cristais
-# v0.4 - Premium UI + Impact FX
+# v0.5 - Flow State + Pause + Gameplay Polish
 # Runner mobile com atmosfera wuxia/cultivation: fluxo, ressonancia e ascensao.
 
 const SAVE_PATH: String = "user://fragment_rush_save.json"
@@ -31,6 +31,7 @@ var hud_layer: CanvasLayer
 var menu_layer: CanvasLayer
 var result_layer: CanvasLayer
 var shop_layer: CanvasLayer
+var pause_layer: CanvasLayer
 
 var score_label: Label
 var crystal_label: Label
@@ -46,6 +47,7 @@ var resonance_bar: ProgressBar
 var menu_card: Panel
 var result_card: Panel
 var shop_card: Panel
+var pause_card: Panel
 
 var title_label: Label
 var subtitle_label: Label
@@ -58,6 +60,12 @@ var result_title: Label
 var result_stats: Label
 var restart_button: Button
 var menu_button: Button
+
+var pause_title: Label
+var pause_info_label: Label
+var pause_button: Button
+var resume_button: Button
+var pause_menu_button: Button
 
 var entities: Array[Dictionary] = []
 var stars: Array[Dictionary] = []
@@ -100,6 +108,8 @@ var pulse_time: float = 0.0
 var flash_alpha: float = 0.0
 var combo_pop_timer: float = 0.0
 var title_breathe: float = 0.0
+var flow_timer: float = 0.0
+var flow_activations: int = 0
 
 func _ready() -> void:
 	rng.randomize()
@@ -124,7 +134,7 @@ func _process(delta: float) -> void:
 	update_impact_fx(real_delta)
 	if screen == "game":
 		update_game(game_delta, real_delta)
-	else:
+	elif screen != "pause":
 		update_menu_motion(real_delta)
 	update_screen_shake(real_delta)
 	queue_redraw()
@@ -155,6 +165,11 @@ func _unhandled_input(event: InputEvent) -> void:
 			touch_start = drag_event.position
 
 func _input(event: InputEvent) -> void:
+	if event.is_action_pressed("ui_cancel"):
+		if screen == "game":
+			pause_game()
+		elif screen == "pause":
+			resume_game()
 	if screen == "game":
 		if event.is_action_pressed("move_left"):
 			move_lane(-1)
@@ -206,6 +221,8 @@ func build_ui() -> void:
 	add_child(result_layer)
 	shop_layer = CanvasLayer.new()
 	add_child(shop_layer)
+	pause_layer = CanvasLayer.new()
+	add_child(pause_layer)
 
 	# HUD - glassmorphism espiritual
 	var hud_left_panel: Panel = make_panel(Vector2(22, 22), Vector2(205, 96), Color(0.03, 0.12, 0.20, 0.72), Color(C_CELESTIAL.r, C_CELESTIAL.g, C_CELESTIAL.b, 0.26))
@@ -252,11 +269,15 @@ func build_ui() -> void:
 	status_label.size = Vector2(VIEW_W, 70)
 	hud_layer.add_child(status_label)
 
+	pause_button = make_button("Ⅱ", Vector2(644, 198), Vector2(54, 52))
+	pause_button.add_theme_font_size_override("font_size", 22)
+	pause_button.pressed.connect(pause_game)
+	hud_layer.add_child(pause_button)
+
 	# Menu principal
 	menu_card = make_panel(Vector2(48, 150), Vector2(624, 730), Color(0.03, 0.11, 0.19, 0.62), Color(C_CELESTIAL.r, C_CELESTIAL.g, C_CELESTIAL.b, 0.22))
 	menu_layer.add_child(menu_card)
-	title_label = make_label("FRAGMENT RUSH
-Corrida dos Cristais", 44, Vector2(0, 48), C_PEARL)
+	title_label = make_label("FRAGMENT RUSH\nCorrida dos Cristais", 44, Vector2(0, 48), C_PEARL)
 	title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title_label.size = Vector2(624, 118)
 	subtitle_label = make_label("Cultive o fluxo. Atravesse o céu fragmentado.", 21, Vector2(58, 182), Color(0.78, 0.95, 1.0, 1.0))
@@ -296,6 +317,24 @@ Corrida dos Cristais", 44, Vector2(0, 48), C_PEARL)
 	close_shop_button.pressed.connect(show_menu)
 	shop_card.add_child(shop_info_label)
 	shop_card.add_child(close_shop_button)
+
+	# Tela de pausa
+	pause_card = make_panel(Vector2(72, 305), Vector2(576, 515), Color(0.03, 0.11, 0.19, 0.76), Color(C_JADE.r, C_JADE.g, C_JADE.b, 0.30))
+	pause_layer.add_child(pause_card)
+	pause_title = make_label("FLUXO PAUSADO", 38, Vector2(0, 48), C_PEARL)
+	pause_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	pause_title.size = Vector2(576, 72)
+	pause_info_label = make_label("Respire.\nA trilha continua quando você voltar.", 22, Vector2(56, 144), Color(0.82, 0.96, 1.0, 0.92))
+	pause_info_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	pause_info_label.size = Vector2(464, 96)
+	resume_button = make_button("CONTINUAR", Vector2(88, 284), Vector2(400, 76))
+	pause_menu_button = make_button("VOLTAR AO MENU", Vector2(108, 382), Vector2(360, 68))
+	resume_button.pressed.connect(resume_game)
+	pause_menu_button.pressed.connect(show_menu)
+	for node in [pause_title, pause_info_label, resume_button, pause_menu_button]:
+		pause_card.add_child(node)
+	pause_layer.visible = false
+
 func make_panel(pos: Vector2, size_panel: Vector2, bg: Color, border: Color) -> Panel:
 	var panel: Panel = Panel.new()
 	panel.position = pos
@@ -461,6 +500,7 @@ func start_game() -> void:
 	menu_layer.visible = false
 	result_layer.visible = false
 	shop_layer.visible = false
+	pause_layer.visible = false
 	hud_layer.visible = true
 	entities.clear()
 	particles.clear()
@@ -468,6 +508,8 @@ func start_game() -> void:
 	afterimages.clear()
 	flash_alpha = 0.0
 	combo_pop_timer = 0.0
+	flow_timer = 0.0
+	flow_activations = 0
 	player_lane = 1
 	target_x = screen_lane_x(player_lane)
 	player.position = Vector2(target_x, PLAYER_Y)
@@ -500,15 +542,48 @@ func show_menu() -> void:
 	menu_layer.visible = true
 	result_layer.visible = false
 	shop_layer.visible = false
+	pause_layer.visible = false
 	hud_layer.visible = false
-	best_label.text = "Marca de Ascensão: %d m
-Cristais Espirituais: %d" % [int(best_distance), total_crystals]
+	best_label.text = "Marca de Ascensão: %d m\nCristais Espirituais: %d" % [int(best_distance), total_crystals]
+
+func pause_game() -> void:
+	if screen != "game":
+		return
+	screen = "pause"
+	hud_layer.visible = false
+	pause_layer.visible = true
+	menu_layer.visible = false
+	result_layer.visible = false
+	shop_layer.visible = false
+
+func resume_game() -> void:
+	if screen != "pause":
+		return
+	screen = "game"
+	hud_layer.visible = true
+	pause_layer.visible = false
+
+func activate_flow_state() -> void:
+	flow_timer = 5.8
+	flow_activations += 1
+	resonance_value = 100.0
+	invulnerable_timer = maxf(invulnerable_timer, 1.2)
+	flash_alpha = maxf(flash_alpha, 0.20)
+	camera_shake = maxf(camera_shake, 8.0)
+	combo_pop_timer = 1.0
+	spawn_afterimage(player.position, C_GOLD, 0.55)
+	spawn_shockwave(player.position, C_GOLD, 48.0, 260.0, 0.72)
+	show_status("ESTADO DE FLUXO", C_GOLD)
+	for _i in range(28):
+		var particle_pos: Vector2 = player.position + Vector2(rng.randf_range(-72.0, 72.0), rng.randf_range(-64.0, 64.0))
+		spawn_particle(particle_pos, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.82), 7, 0.58)
 
 func show_shop() -> void:
 	screen = "shop"
 	menu_layer.visible = false
 	result_layer.visible = false
 	shop_layer.visible = true
+	pause_layer.visible = false
 	hud_layer.visible = false
 	var lines: Array[String] = []
 	lines.append("PAVILHÃO DAS FORMAS")
@@ -536,8 +611,18 @@ func update_game(delta: float, real_delta: float) -> void:
 	difficulty += real_delta * 0.018
 	speed = minf(820.0, 390.0 + distance * 0.03 + difficulty * 42.0)
 	distance += speed * delta * 0.045
-	score += int(14.0 * delta * (1.0 + float(combo) * 0.08))
-	resonance_value = maxf(0.0, resonance_value - real_delta * 2.5)
+	var flow_multiplier: float = 1.65 if flow_timer > 0.0 else 1.0
+	score += int(14.0 * delta * (1.0 + float(combo) * 0.08) * flow_multiplier)
+	if flow_timer > 0.0:
+		flow_timer = maxf(0.0, flow_timer - real_delta)
+		invulnerable_timer = maxf(invulnerable_timer, 0.08)
+		resonance_value = maxf(0.0, resonance_value - real_delta * 8.0)
+		if rng.randf() < 0.38:
+			spawn_afterimage(player.position, C_JADE, 0.25)
+	else:
+		resonance_value = maxf(0.0, resonance_value - real_delta * 2.5)
+	if resonance_value >= 100.0 and flow_timer <= 0.0:
+		activate_flow_state()
 	if dash_cooldown > 0.0:
 		dash_cooldown -= real_delta
 	if dash_timer > 0.0:
@@ -550,7 +635,8 @@ func update_game(delta: float, real_delta: float) -> void:
 	player.position.x = lerpf(player.position.x, target_x, minf(1.0, 14.0 * real_delta))
 	player.rotation = lerpf(player.rotation, (target_x - player.position.x) * 0.003, 8.0 * real_delta)
 	var dash_scale: float = 0.14 if dash_timer > 0.0 else 0.0
-	player.scale = Vector2.ONE * (1.0 + sin(run_time * 9.0) * 0.025 + dash_scale)
+	var flow_scale: float = 0.08 if flow_timer > 0.0 else 0.0
+	player.scale = Vector2.ONE * (1.0 + sin(run_time * 9.0) * 0.025 + dash_scale + flow_scale)
 	player_core.color = skin_color(selected_skin)
 	player_glow.color = Color(C_CELESTIAL.r, C_CELESTIAL.g, C_CELESTIAL.b, 0.22 + clampf(resonance_value / 100.0, 0.0, 0.18))
 	player_ring.color = Color(C_JADE.r, C_JADE.g, C_JADE.b, 0.10 + clampf(resonance_value / 120.0, 0.0, 0.20))
@@ -558,6 +644,8 @@ func update_game(delta: float, real_delta: float) -> void:
 		spawn_particle(player.position, Color(C_JADE.r, C_JADE.g, C_JADE.b, 0.82), 9, 0.42)
 		if rng.randf() < 0.55:
 			spawn_afterimage(player.position, player_core.color, 0.30)
+	if flow_timer > 0.0 and rng.randf() < 0.50:
+		spawn_particle(player.position + Vector2(rng.randf_range(-68.0, 68.0), rng.randf_range(-24.0, 62.0)), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.46), 3, 0.36)
 	if speed > 560.0 and rng.randf() < 0.08:
 		spawn_particle(player.position + Vector2(rng.randf_range(-42.0, 42.0), rng.randf_range(26.0, 72.0)), Color(C_CELESTIAL.r, C_CELESTIAL.g, C_CELESTIAL.b, 0.34), 2, 0.28)
 
@@ -584,10 +672,16 @@ func update_hud() -> void:
 	hud_best_label.text = "Ascensão %d m" % int(best_distance)
 	combo_label.text = "x%d" % max(combo, 1)
 	var dash_ready: bool = dash_cooldown <= 0.0
-	dash_label.text = "Passo pronto" if dash_ready else "Recarga %.1fs" % maxf(dash_cooldown, 0.0)
-	dash_label.add_theme_color_override("font_color", C_JADE if dash_ready else Color(0.78, 0.92, 1.0, 0.78))
-	resonance_label.text = "Ressonância  %d%%" % int(clampf(resonance_value, 0.0, 100.0))
-	resonance_bar.value = clampf(resonance_value, 0.0, 100.0)
+	if flow_timer > 0.0:
+		dash_label.text = "Fluxo %.1fs" % flow_timer
+		dash_label.add_theme_color_override("font_color", C_GOLD)
+		resonance_label.text = "Estado de Fluxo  %.1fs" % flow_timer
+		resonance_bar.value = 100.0
+	else:
+		dash_label.text = "Passo pronto" if dash_ready else "Recarga %.1fs" % maxf(dash_cooldown, 0.0)
+		dash_label.add_theme_color_override("font_color", C_JADE if dash_ready else Color(0.78, 0.92, 1.0, 0.78))
+		resonance_label.text = "Ressonância  %d%%" % int(clampf(resonance_value, 0.0, 100.0))
+		resonance_bar.value = clampf(resonance_value, 0.0, 100.0)
 	if combo >= 2:
 		combo_label.add_theme_color_override("font_color", C_GOLD)
 	else:
@@ -720,6 +814,8 @@ func update_entities(delta: float) -> void:
 
 func collect_crystal(e: Dictionary) -> void:
 	var multiplier: int = 2 if combo >= 8 else 1
+	if flow_timer > 0.0:
+		multiplier += 1
 	var value: int = int(e.get("value", 1))
 	crystals_run += value * multiplier
 	score += 30 * multiplier
@@ -776,8 +872,9 @@ func game_over() -> void:
 	result_layer.visible = true
 	menu_layer.visible = false
 	shop_layer.visible = false
+	pause_layer.visible = false
 	var new_mark: String = "\nNova Marca de Ascensão!" if int(distance) >= int(best_distance) else ""
-	result_stats.text = "Distância: %d m\nPontuação: %d\nCristais Espirituais: %d\nRessonâncias Perfeitas: %d\nMaior Fluxo: x%d\n%s\n\nTotal de Cristais: %d\nMarca de Ascensão: %d m" % [int(distance), score, crystals_run, perfect_grazes, combo, new_mark, total_crystals, int(best_distance)]
+	result_stats.text = "Distância: %d m\nPontuação: %d\nCristais Espirituais: %d\nRessonâncias Perfeitas: %d\nEstados de Fluxo: %d\nMaior Fluxo: x%d\n%s\n\nTotal de Cristais: %d\nMarca de Ascensão: %d m" % [int(distance), score, crystals_run, perfect_grazes, flow_activations, max(combo, 1), new_mark, total_crystals, int(best_distance)]
 	camera_shake = 17.0
 
 func show_status(text: String, color: Color) -> void:
@@ -941,9 +1038,10 @@ func draw_speed_lines() -> void:
 	if screen != "game":
 		return
 	var speed_factor: float = clampf((speed - 390.0) / 430.0, 0.0, 1.0)
-	if speed_factor <= 0.02 and dash_timer <= 0.0:
+	if speed_factor <= 0.02 and dash_timer <= 0.0 and flow_timer <= 0.0:
 		return
-	var alpha: float = 0.055 + speed_factor * 0.08
+	var flow_boost: float = 0.10 if flow_timer > 0.0 else 0.0
+	var alpha: float = 0.055 + speed_factor * 0.08 + flow_boost
 	for i in range(14):
 		var x: float = rng.randf_range(36.0, VIEW_W - 36.0)
 		var y: float = fmod(pulse_time * (330.0 + speed * 0.16) + float(i) * 96.0, VIEW_H + 120.0) - 80.0
@@ -985,6 +1083,10 @@ func draw_flash_overlay() -> void:
 	draw_rect(Rect2(Vector2.ZERO, Vector2(VIEW_W, VIEW_H)), Color(C_PEARL.r, C_PEARL.g, C_PEARL.b, flash_alpha * 0.35))
 	draw_rect(Rect2(Vector2.ZERO, Vector2(VIEW_W, 90.0)), Color(C_CELESTIAL.r, C_CELESTIAL.g, C_CELESTIAL.b, flash_alpha * 0.28))
 	draw_rect(Rect2(Vector2(0.0, VIEW_H - 90.0), Vector2(VIEW_W, 90.0)), Color(C_JADE.r, C_JADE.g, C_JADE.b, flash_alpha * 0.22))
+	if flow_timer > 0.0:
+		var edge_alpha: float = 0.035 + 0.025 * sin(pulse_time * 7.0)
+		draw_rect(Rect2(Vector2.ZERO, Vector2(8.0, VIEW_H)), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, edge_alpha))
+		draw_rect(Rect2(Vector2(VIEW_W - 8.0, 0.0), Vector2(8.0, VIEW_H)), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, edge_alpha))
 
 func draw_cultivation_background() -> void:
 	draw_rect(Rect2(Vector2.ZERO, Vector2(VIEW_W, VIEW_H)), C_DEEP_SKY)
@@ -1078,6 +1180,8 @@ func draw_player_aura() -> void:
 	if player == null:
 		return
 	var aura_power: float = clampf(resonance_value / 100.0, 0.0, 1.0)
+	if flow_timer > 0.0:
+		aura_power = 1.0
 	var breathe: float = 1.0 + sin(pulse_time * 3.2) * 0.05
 	var p: Vector2 = player.position
 	draw_circle(p, 112.0 * breathe + aura_power * 32.0, Color(C_CELESTIAL.r, C_CELESTIAL.g, C_CELESTIAL.b, 0.055 + aura_power * 0.08))
@@ -1087,6 +1191,9 @@ func draw_player_aura() -> void:
 		var start_angle: float = pulse_time * (0.55 + float(i) * 0.08) + float(i) * 0.9
 		var arc_color: Color = C_JADE if i % 2 == 0 else C_CELESTIAL
 		draw_arc(p, r, start_angle, start_angle + PI * 1.18, 64, Color(arc_color.r, arc_color.g, arc_color.b, 0.12 + aura_power * 0.10), 2.0, true)
+	if flow_timer > 0.0:
+		draw_circle(p, 158.0 + sin(pulse_time * 6.0) * 8.0, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.10))
+		draw_arc(p, 148.0, -pulse_time * 1.2, -pulse_time * 1.2 + PI * 1.55, 96, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.26), 3.0, true)
 	if dash_timer > 0.0:
 		draw_circle(p, 132.0, Color(C_JADE.r, C_JADE.g, C_JADE.b, 0.10))
 
