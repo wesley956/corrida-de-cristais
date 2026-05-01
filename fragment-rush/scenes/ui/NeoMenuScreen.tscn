@@ -1,0 +1,103 @@
+[gd_scene load_steps=5 format=3 uid="uid://neo_menu_screen"]
+
+[ext_resource type="Script" path="res://scripts/ui/NeoMenuScreen.gd" id="1"]
+[ext_resource type="Script" path="res://scripts/ui/NeoBackground.gd" id="2"]
+[ext_resource type="Script" path="res://scripts/ui/OrbPreview.gd" id="3"]
+
+[node name="NeoMenuScreen" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+script = ExtResource("1")
+
+[node name="NeoBackground" type="Control" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+script = ExtResource("2")
+
+[node name="Center" type="Control" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+
+[node name="Title" type="Label" parent="Center"]
+layout_mode = 0
+offset_left = 48.0
+offset_top = 48.0
+offset_right = 672.0
+offset_bottom = 142.0
+text = "FRAGMENT RUSH
+Corrida dos Cristais"
+
+[node name="Subtitle" type="Label" parent="Center"]
+layout_mode = 0
+offset_left = 64.0
+offset_top = 145.0
+offset_right = 656.0
+offset_bottom = 178.0
+text = "Neo-cultivo cristalino em alta velocidade"
+
+[node name="OrbPreview" type="Control" parent="Center"]
+layout_mode = 0
+offset_left = 190.0
+offset_top = 188.0
+offset_right = 530.0
+offset_bottom = 528.0
+mouse_filter = 2
+script = ExtResource("3")
+
+[node name="Stats" type="Label" parent="Center"]
+layout_mode = 0
+offset_left = 70.0
+offset_top = 540.0
+offset_right = 650.0
+offset_bottom = 602.0
+text = "Fluxo Inicial · XP 0 · Círculos 0/5
+Marca 0m · Cristais 0"
+
+[node name="StartButton" type="Button" parent="Center"]
+layout_mode = 0
+offset_left = 104.0
+offset_top = 650.0
+offset_right = 616.0
+offset_bottom = 736.0
+text = "INICIAR CORRIDA"
+
+[node name="Secondary" type="HBoxContainer" parent="Center"]
+layout_mode = 0
+offset_left = 92.0
+offset_top = 766.0
+offset_right = 628.0
+offset_bottom = 836.0
+theme_override_constants/separation = 22
+
+[node name="PavilionButton" type="Button" parent="Center/Secondary"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "PAVILHÃO"
+
+[node name="CoreButton" type="Button" parent="Center/Secondary"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "NÚCLEO"
+
+[node name="DailyButton" type="Button" parent="Center"]
+layout_mode = 0
+offset_left = 130.0
+offset_top = 870.0
+offset_right = 590.0
+offset_bottom = 934.0
+text = "ESSÊNCIA DIÁRIA +180"
+
+[node name="GuideButton" type="Button" parent="Center"]
+layout_mode = 0
+offset_left = 210.0
+offset_top = 966.0
+offset_right = 510.0
+offset_bottom = 1022.0
+text = "COMO JOGAR"
