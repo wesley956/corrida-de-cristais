@@ -1,7 +1,7 @@
 extends Node2D
 
 # Fragment Rush: Corrida dos Cristais
-# v1.1.2 - Neo Cultivation Visual
+# v1.2.1 - Connected Neo UI Scenes
 # Runner mobile com atmosfera wuxia/cultivation: fluxo, ressonancia e ascensao.
 
 const SAVE_PATH: String = "user://fragment_rush_save.json"
@@ -35,6 +35,7 @@ var pause_layer: CanvasLayer
 var cultivation_layer: CanvasLayer
 var tutorial_layer: CanvasLayer
 var transition_layer: CanvasLayer
+var neo_ui: FragmentUiController
 
 var score_label: Label
 var crystal_label: Label
@@ -372,6 +373,18 @@ func build_ui() -> void:
 	add_child(tutorial_layer)
 	transition_layer = CanvasLayer.new()
 	add_child(transition_layer)
+
+	neo_ui = FragmentUiController.new()
+	add_child(neo_ui)
+	neo_ui.start_requested.connect(start_game)
+	neo_ui.pavilion_requested.connect(show_shop)
+	neo_ui.core_requested.connect(show_cultivation)
+	neo_ui.daily_requested.connect(claim_daily_reward)
+	neo_ui.guide_requested.connect(show_tutorial)
+	neo_ui.back_requested.connect(show_menu)
+	neo_ui.skin_selected.connect(select_shop_skin)
+	neo_ui.skin_action_requested.connect(activate_selected_shop_skin)
+	neo_ui.upgrade_requested.connect(upgrade_technique)
 
 	# HUD - glassmorphism espiritual
 	var hud_left_panel: Panel = make_panel(Vector2(22, 22), Vector2(188, 82), Color(0.03, 0.12, 0.20, 0.72), Color(C_CELESTIAL.r, C_CELESTIAL.g, C_CELESTIAL.b, 0.26))
@@ -755,6 +768,8 @@ func update_screen_shake(delta: float) -> void:
 func start_game() -> void:
 	screen = "countdown"
 	run_countdown = 2.35
+	if neo_ui != null:
+		neo_ui.hide_all()
 	menu_layer.visible = false
 	result_layer.visible = false
 	shop_layer.visible = false
@@ -865,23 +880,135 @@ func get_next_form_progress_percent() -> float:
 		return 100.0
 	return clampf(float(total_crystals) / float(cheapest_price) * 100.0, 0.0, 100.0)
 
+func hide_legacy_meta_layers() -> void:
+	menu_layer.visible = false
+	shop_layer.visible = false
+	cultivation_layer.visible = false
+	if neo_ui != null:
+		neo_ui.visible = true
+
+func update_neo_menu() -> void:
+	if neo_ui == null or neo_ui.menu == null:
+		return
+	var daily_available: bool = last_daily_reward != current_day_key()
+	var ring_count: int = max(1, unlocked_circle_count())
+	neo_ui.menu.set_data(
+		get_cultivation_stage_name(),
+		cultivation_xp,
+		unlocked_circle_count(),
+		RESONANCE_CIRCLES.size(),
+		int(best_distance),
+		total_crystals,
+		daily_available,
+		skin_color(selected_skin),
+		ring_count
+	)
+
+func shop_action_text(skin_id: String) -> String:
+	var data: Dictionary = SKINS[skin_id]
+	var price: int = int(data["price"])
+	var owned: bool = bool(owned_skins.get(skin_id, false))
+	var equipped: bool = skin_id == selected_skin
+	if equipped:
+		return "EQUIPADO"
+	if owned:
+		return "EQUIPAR FORMA"
+	if total_crystals >= price:
+		return "DESPERTAR · %d" % price
+	return "FALTAM %d CRISTAIS" % max(0, price - total_crystals)
+
+func neo_skin_buttons_data() -> Array[Dictionary]:
+	var result: Array[Dictionary] = []
+	var skin_order: Array[String] = ["nucleo_errante", "semente_jade", "orbe_celestial", "coracao_nebular", "essencia_dourada"]
+	for skin_id: String in skin_order:
+		var data: Dictionary = SKINS[skin_id]
+		var price: int = int(data["price"])
+		var owned: bool = bool(owned_skins.get(skin_id, false))
+		var equipped: bool = skin_id == selected_skin
+		var state: String = "EQUIPADO" if equipped else ("LIBERADO" if owned else "%d cristais" % price)
+		var rarity: String = skin_rarity(skin_id)
+		result.append({
+			"id": skin_id,
+			"name": str(data["name"]),
+			"state": "%s · %s" % [skin_rarity(skin_id), state],
+			"color": rarity_color_text(rarity)
+		})
+	return result
+
+func update_neo_pavilion() -> void:
+	if neo_ui == null or neo_ui.pavilion == null:
+		return
+	if not SKINS.has(selected_shop_skin):
+		selected_shop_skin = selected_skin
+	if not SKINS.has(selected_shop_skin):
+		selected_shop_skin = "nucleo_errante"
+	var data: Dictionary = SKINS[selected_shop_skin]
+	var rarity: String = skin_rarity(selected_shop_skin)
+	neo_ui.pavilion.set_data(
+		selected_shop_skin,
+		str(data["name"]),
+		rarity,
+		str(data["desc"]),
+		skin_affinity_text(selected_shop_skin),
+		total_crystals,
+		shop_action_text(selected_shop_skin),
+		rarity_color_text(rarity),
+		max(1, unlocked_circle_count()),
+		neo_skin_buttons_data()
+	)
+
+func technique_ui_data() -> Array[Dictionary]:
+	var result: Array[Dictionary] = []
+	var order: Array[String] = ["dash", "jade", "flow"]
+	for tech_id: String in order:
+		var data: Dictionary = TECHNIQUES[tech_id]
+		var level: int = tech_level(tech_id)
+		var max_level: int = int(data["max"])
+		var action: String = "MAX" if level >= max_level else "%d cristais" % technique_price(tech_id)
+		result.append({
+			"id": tech_id,
+			"name": str(data["name"]),
+			"level": "%d/%d" % [level, max_level],
+			"action": action
+		})
+	return result
+
+func update_neo_core() -> void:
+	if neo_ui == null or neo_ui.core == null:
+		return
+	var accent: Color = C_CELESTIAL
+	var count: int = unlocked_circle_count()
+	if count > 0:
+		accent = circle_color(count)
+	neo_ui.core.set_data(
+		get_cultivation_stage_name(),
+		cultivation_xp,
+		get_stage_progress_percent(),
+		next_circle_hint(),
+		accent,
+		max(1, count),
+		technique_ui_data()
+	)
+
 func show_menu() -> void:
 	screen = "menu"
-	menu_layer.visible = true
+	hide_legacy_meta_layers()
 	result_layer.visible = false
-	shop_layer.visible = false
 	pause_layer.visible = false
-	cultivation_layer.visible = false
 	tutorial_layer.visible = false
 	transition_layer.visible = false
 	hud_layer.visible = false
-	best_label.text = "%s  •  XP %d  •  Círculos %d/%d\nMarca: %d m  •  Cristais: %d" % [get_cultivation_stage_name(), cultivation_xp, unlocked_circle_count(), RESONANCE_CIRCLES.size(), int(best_distance), total_crystals]
+	if neo_ui != null:
+		neo_ui.show_menu()
+	update_neo_menu()
 	update_daily_button()
 
 func pause_game() -> void:
 	if screen != "game":
 		return
 	screen = "pause"
+	if neo_ui != null:
+		neo_ui.hide_all()
 	hud_layer.visible = false
 	pause_layer.visible = true
 	menu_layer.visible = false
@@ -914,6 +1041,8 @@ func activate_flow_state() -> void:
 
 func show_tutorial() -> void:
 	screen = "tutorial"
+	if neo_ui != null:
+		neo_ui.hide_all()
 	menu_layer.visible = false
 	result_layer.visible = false
 	shop_layer.visible = false
@@ -980,15 +1109,16 @@ func circle_unlock_text(old_count: int, new_count: int) -> String:
 
 func show_cultivation() -> void:
 	screen = "cultivation"
-	menu_layer.visible = false
+	hide_legacy_meta_layers()
 	result_layer.visible = false
-	shop_layer.visible = false
 	pause_layer.visible = false
-	cultivation_layer.visible = true
 	tutorial_layer.visible = false
 	transition_layer.visible = false
 	hud_layer.visible = false
+	if neo_ui != null:
+		neo_ui.show_core()
 	update_cultivation_ui()
+	update_neo_core()
 
 func get_cultivation_stage_index() -> int:
 	if cultivation_xp >= 6000:
@@ -1051,6 +1181,7 @@ Nv.%d/%d
 			b.add_theme_stylebox_override("normal", make_button_style(Color(0.10, 0.23, 0.22, 0.82), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.62)))
 		else:
 			b.add_theme_stylebox_override("normal", make_button_style(Color(0.035, 0.12, 0.19, 0.72), Color(border_color.r, border_color.g, border_color.b, 0.40)))
+	update_neo_core()
 
 func upgrade_technique(tech_id: String) -> void:
 	if not TECHNIQUES.has(tech_id):
@@ -1075,16 +1206,17 @@ func upgrade_technique(tech_id: String) -> void:
 
 func show_shop() -> void:
 	screen = "shop"
-	menu_layer.visible = false
+	hide_legacy_meta_layers()
 	result_layer.visible = false
-	shop_layer.visible = true
 	pause_layer.visible = false
-	cultivation_layer.visible = false
 	tutorial_layer.visible = false
 	transition_layer.visible = false
 	hud_layer.visible = false
 	selected_shop_skin = selected_skin
+	if neo_ui != null:
+		neo_ui.show_pavilion()
 	update_shop_ui()
+	update_neo_pavilion()
 
 func skin_rarity(skin_id: String) -> String:
 	match skin_id:
@@ -1202,6 +1334,7 @@ func update_shop_ui() -> void:
 			b.add_theme_stylebox_override("normal", make_button_style(Color(0.04, 0.13, 0.19, 0.66), Color(item_color.r, item_color.g, item_color.b, 0.36)))
 		else:
 			b.add_theme_stylebox_override("normal", make_button_style(Color(0.025, 0.07, 0.12, 0.54), Color(item_color.r, item_color.g, item_color.b, 0.18)))
+	update_neo_pavilion()
 
 func buy_or_select_skin(skin_id: String) -> void:
 	if not SKINS.has(skin_id):
@@ -1244,6 +1377,7 @@ func update_daily_button() -> void:
 	else:
 		daily_button.text = "RECEBER ESSÊNCIA DIÁRIA"
 		daily_button.disabled = false
+	update_neo_menu()
 
 func claim_daily_reward() -> void:
 	var today: String = current_day_key()
@@ -1255,6 +1389,7 @@ func claim_daily_reward() -> void:
 	save_game()
 	update_daily_button()
 	best_label.text = "Marca de Ascensão: %d m\nCristais Espirituais: %d" % [int(best_distance), total_crystals]
+	update_neo_menu()
 	show_status("+180 ESSÊNCIA DIÁRIA", C_GOLD)
 	spawn_shockwave(player.position, C_GOLD, 40.0, 250.0, 0.65)
 
@@ -1626,6 +1761,8 @@ func calculate_xp_gain() -> int:
 
 func game_over() -> void:
 	screen = "result"
+	if neo_ui != null:
+		neo_ui.hide_all()
 	completed_run_missions = calculate_run_missions()
 	run_mission_bonus = completed_run_missions.size() * 75
 	var old_circle_count: int = unlocked_circle_count()

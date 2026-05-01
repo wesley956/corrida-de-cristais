@@ -19,9 +19,9 @@ signal guide_requested
 @onready var guide_button: Button = $Center/GuideButton
 
 func _ready() -> void:
-	FragmentUiTheme.label(title, 42, FragmentUiTheme.PEARL, true)
+	FragmentUiTheme.label(title, 40, FragmentUiTheme.PEARL, true)
 	FragmentUiTheme.label(subtitle, 18, FragmentUiTheme.MUTED, true)
-	FragmentUiTheme.label(stats, 17, FragmentUiTheme.MUTED, true)
+	FragmentUiTheme.label(stats, 16, FragmentUiTheme.MUTED, true)
 
 	for b in [start_button, pavilion_button, core_button, daily_button, guide_button]:
 		b.add_theme_stylebox_override("normal", FragmentUiTheme.button_style())

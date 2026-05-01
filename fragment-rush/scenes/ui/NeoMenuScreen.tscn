@@ -28,52 +28,52 @@ anchor_bottom = 1.0
 [node name="Title" type="Label" parent="Center"]
 layout_mode = 0
 offset_left = 48.0
-offset_top = 48.0
+offset_top = 34.0
 offset_right = 672.0
-offset_bottom = 142.0
+offset_bottom = 126.0
 text = "FRAGMENT RUSH
 Corrida dos Cristais"
 
 [node name="Subtitle" type="Label" parent="Center"]
 layout_mode = 0
 offset_left = 64.0
-offset_top = 145.0
+offset_top = 132.0
 offset_right = 656.0
-offset_bottom = 178.0
+offset_bottom = 164.0
 text = "Neo-cultivo cristalino em alta velocidade"
 
 [node name="OrbPreview" type="Control" parent="Center"]
 layout_mode = 0
 offset_left = 190.0
-offset_top = 188.0
+offset_top = 178.0
 offset_right = 530.0
-offset_bottom = 528.0
+offset_bottom = 506.0
 mouse_filter = 2
 script = ExtResource("3")
 
 [node name="Stats" type="Label" parent="Center"]
 layout_mode = 0
-offset_left = 70.0
-offset_top = 540.0
-offset_right = 650.0
-offset_bottom = 602.0
+offset_left = 72.0
+offset_top = 518.0
+offset_right = 648.0
+offset_bottom = 586.0
 text = "Fluxo Inicial · XP 0 · Círculos 0/5
 Marca 0m · Cristais 0"
 
 [node name="StartButton" type="Button" parent="Center"]
 layout_mode = 0
 offset_left = 104.0
-offset_top = 650.0
+offset_top = 626.0
 offset_right = 616.0
-offset_bottom = 736.0
+offset_bottom = 712.0
 text = "INICIAR CORRIDA"
 
 [node name="Secondary" type="HBoxContainer" parent="Center"]
 layout_mode = 0
 offset_left = 92.0
-offset_top = 766.0
+offset_top = 748.0
 offset_right = 628.0
-offset_bottom = 836.0
+offset_bottom = 818.0
 theme_override_constants/separation = 22
 
 [node name="PavilionButton" type="Button" parent="Center/Secondary"]
@@ -89,15 +89,15 @@ text = "NÚCLEO"
 [node name="DailyButton" type="Button" parent="Center"]
 layout_mode = 0
 offset_left = 130.0
-offset_top = 870.0
+offset_top = 850.0
 offset_right = 590.0
-offset_bottom = 934.0
+offset_bottom = 914.0
 text = "ESSÊNCIA DIÁRIA +180"
 
 [node name="GuideButton" type="Button" parent="Center"]
 layout_mode = 0
 offset_left = 210.0
-offset_top = 966.0
+offset_top = 946.0
 offset_right = 510.0
-offset_bottom = 1022.0
+offset_bottom = 1002.0
 text = "COMO JOGAR"

@@ -19,8 +19,9 @@ signal upgrade_requested(tech_id: String)
 
 func _ready() -> void:
 	FragmentUiTheme.label(title, 32, FragmentUiTheme.PEARL, true)
-	FragmentUiTheme.label(stage_label, 24, FragmentUiTheme.PEARL, true)
-	FragmentUiTheme.label(next_label, 17, FragmentUiTheme.MUTED, true)
+	FragmentUiTheme.label(stage_label, 22, FragmentUiTheme.PEARL, true)
+	FragmentUiTheme.label(next_label, 16, FragmentUiTheme.MUTED, true)
+	next_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 
 	xp_bar.add_theme_stylebox_override("background", FragmentUiTheme.panel_style(Color(0.03, 0.08, 0.12, 0.62), FragmentUiTheme.CYAN, 18, 1))
 	xp_bar.add_theme_stylebox_override("fill", FragmentUiTheme.panel_style(FragmentUiTheme.JADE, FragmentUiTheme.JADE, 18, 0))
@@ -29,7 +30,7 @@ func _ready() -> void:
 	for b in tech_buttons:
 		b.add_theme_stylebox_override("normal", FragmentUiTheme.button_style(Color(0.02, 0.09, 0.14, 0.42), FragmentUiTheme.CYAN, 36))
 		b.add_theme_stylebox_override("hover", FragmentUiTheme.button_style(Color(0.04, 0.14, 0.20, 0.62), FragmentUiTheme.JADE, 36))
-		b.add_theme_font_size_override("font_size", 15)
+		b.add_theme_font_size_override("font_size", 13)
 		b.add_theme_color_override("font_color", FragmentUiTheme.PEARL)
 
 	tech_buttons[0].pressed.connect(func(): upgrade_requested.emit("dash"))
