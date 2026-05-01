@@ -1,7 +1,7 @@
 extends Node2D
 
 # Fragment Rush: Corrida dos Cristais
-# v1.3.1 - Corrige Visual das Formas na Corrida
+# v1.4 - Resultado Premium + Recompensas Animadas
 # Runner mobile com atmosfera wuxia/cultivation: fluxo, ressonancia e ascensao.
 
 const SAVE_PATH: String = "user://fragment_rush_save.json"
@@ -251,6 +251,11 @@ var flow_timer: float = 0.0
 var flow_activations: int = 0
 var run_countdown: float = 0.0
 var result_reveal_timer: float = 0.0
+var result_count_crystals: float = 0.0
+var result_count_xp: float = 0.0
+var result_target_crystals: int = 0
+var result_target_xp: int = 0
+var result_badge_pulse: float = 0.0
 
 func _ready() -> void:
 	rng.randomize()
@@ -535,19 +540,23 @@ func build_ui() -> void:
 	result_summary_label = make_label("", 28, Vector2(38, 112), C_GOLD)
 	result_summary_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	result_summary_label.size = Vector2(548, 90)
-	result_stats = make_label("", 16, Vector2(48, 218), Color(0.86, 0.96, 1.0, 1.0))
-	result_stats.size = Vector2(528, 305)
-	result_xp_label = make_label("", 18, Vector2(48, 520), Color(0.88, 1.0, 0.92, 0.95))
+	result_stats = make_label("", 15, Vector2(48, 226), Color(0.86, 0.96, 1.0, 1.0))
+	result_stats.size = Vector2(528, 285)
+	result_xp_label = make_label("", 17, Vector2(48, 522), Color(0.88, 1.0, 0.92, 0.95))
 	result_xp_label.size = Vector2(528, 34)
-	result_xp_bar = make_progress_bar(Vector2(48, 560), Vector2(528, 18))
-	result_form_label = make_label("", 18, Vector2(48, 600), Color(1.0, 0.90, 0.62, 0.96))
+	result_xp_bar = make_progress_bar(Vector2(48, 558), Vector2(528, 18))
+	result_form_label = make_label("", 17, Vector2(48, 592), Color(1.0, 0.90, 0.62, 0.96))
 	result_form_label.size = Vector2(528, 34)
-	result_form_bar = make_progress_bar(Vector2(48, 640), Vector2(528, 18))
-	restart_button = make_button("CULTIVAR NOVAMENTE", Vector2(92, 755), Vector2(440, 76))
-	menu_button = make_button("VOLTAR AO MENU", Vector2(142, 850), Vector2(340, 66))
+	result_form_bar = make_progress_bar(Vector2(48, 628), Vector2(528, 18))
+	restart_button = make_button("CULTIVAR NOVAMENTE", Vector2(92, 728), Vector2(440, 76))
+	menu_button = make_button("VOLTAR AO MENU", Vector2(142, 906), Vector2(340, 62))
+	var result_pavilion_button: Button = make_button("PAVILHÃO", Vector2(66, 820), Vector2(270, 62))
+	var result_core_button: Button = make_button("NÚCLEO", Vector2(384, 820), Vector2(270, 62))
 	restart_button.pressed.connect(start_game)
 	menu_button.pressed.connect(show_menu)
-	for node in [result_title, result_summary_label, result_stats, result_xp_label, result_xp_bar, result_form_label, result_form_bar, restart_button, menu_button]:
+	result_pavilion_button.pressed.connect(show_shop)
+	result_core_button.pressed.connect(show_cultivation)
+	for node in [result_title, result_summary_label, result_stats, result_xp_label, result_xp_bar, result_form_label, result_form_bar, restart_button, result_pavilion_button, result_core_button, menu_button]:
 		result_card.add_child(node)
 
 	# Pavilhão Celestial das Formas — vitrine holográfica
@@ -902,10 +911,21 @@ func update_countdown(delta: float) -> void:
 
 func update_result_motion(delta: float) -> void:
 	result_reveal_timer += delta
+	result_badge_pulse += delta
 	if result_card != null:
-		result_card.modulate.a = minf(1.0, 0.82 + result_reveal_timer * 0.7)
+		result_card.modulate.a = minf(1.0, 0.70 + result_reveal_timer * 0.82)
 	if result_summary_label != null:
-		result_summary_label.scale = Vector2.ONE * (1.0 + sin(pulse_time * 1.8) * 0.012)
+		result_summary_label.scale = Vector2.ONE * (1.0 + sin(pulse_time * 1.8) * 0.014)
+
+	var speed_count: float = maxf(1.0, delta * 5.2)
+	result_count_crystals = lerpf(result_count_crystals, float(result_target_crystals), speed_count)
+	result_count_xp = lerpf(result_count_xp, float(result_target_xp), speed_count)
+	if absf(result_count_crystals - float(result_target_crystals)) < 0.7:
+		result_count_crystals = float(result_target_crystals)
+	if absf(result_count_xp - float(result_target_xp)) < 0.7:
+		result_count_xp = float(result_target_xp)
+	if result_summary_label != null:
+		result_summary_label.text = "%d m\n+%d XP  •  +%d Cristais" % [int(distance), int(result_count_xp), int(result_count_crystals)]
 
 func get_stage_progress_percent() -> float:
 	var idx: int = get_cultivation_stage_index()
@@ -1877,6 +1897,11 @@ func game_over() -> void:
 	best_distance = maxf(best_distance, distance)
 	save_game()
 	result_reveal_timer = 0.0
+	result_count_crystals = 0.0
+	result_count_xp = 0.0
+	result_target_crystals = crystals_run + run_mission_bonus
+	result_target_xp = last_xp_gain
+	result_badge_pulse = 0.0
 	hud_layer.visible = false
 	result_layer.visible = true
 	menu_layer.visible = false
@@ -1893,8 +1918,8 @@ func game_over() -> void:
 	if circle_text == "":
 		circle_text = next_circle_hint()
 	var biome_reached: String = str(get_current_biome()["name"])
-	result_summary_label.text = "%d m  •  +%d XP\n+%d Cristais" % [int(distance), last_xp_gain, crystals_run + run_mission_bonus]
-	result_stats.text = "Bioma alcançado: %s\nPontuação: %d\nCristais raros: %d\nRessonâncias Perfeitas: %d\nEstados de Fluxo: %d\nMaior Fluxo: x%d\n%s\n%s\n\nMissões:\n%s" % [biome_reached, score, rare_crystals_run, perfect_grazes, flow_activations, max(combo, 1), new_mark, circle_text, mission_text]
+	result_summary_label.text = "%d m\n+0 XP  •  +0 Cristais" % int(distance)
+	result_stats.text = "Pontuação: %d  •  Bioma: %s\nRaros: %d  •  Ressonâncias: %d  •  Fluxos: %d\nMaior Fluxo: x%d\n%s\n%s" % [score, biome_reached, rare_crystals_run, perfect_grazes, flow_activations, max(combo, 1), new_mark, circle_text]
 	result_xp_label.text = "Núcleo: %s  •  XP %d  •  Círculos %d/%d" % [get_cultivation_stage_name(), cultivation_xp, unlocked_circle_count(), RESONANCE_CIRCLES.size()]
 	result_xp_bar.value = get_stage_progress_percent()
 	result_form_label.text = get_next_unlock_hint()
@@ -2388,12 +2413,44 @@ func draw_cultivation_chamber() -> void:
 		draw_circle(p, 52.0, Color(tc.r, tc.g, tc.b, 0.045))
 		draw_arc(p, 43.0, pulse_time * 0.5 + float(i), pulse_time * 0.5 + float(i) + PI * 1.24, 48, Color(tc.r, tc.g, tc.b, 0.24), 2.0, true)
 
+func draw_result_badge(center: Vector2, label: String, value: String, color: Color, phase: float) -> void:
+	var pulse: float = 1.0 + sin(result_badge_pulse * 2.2 + phase) * 0.018
+	draw_circle(center, 72.0 * pulse, Color(color.r, color.g, color.b, 0.055))
+	draw_arc(center, 64.0 * pulse, pulse_time * 0.22 + phase, pulse_time * 0.22 + phase + PI * 1.42, 80, Color(color.r, color.g, color.b, 0.18), 2.0, true)
+	draw_arc(center, 49.0 * pulse, -pulse_time * 0.18 + phase, -pulse_time * 0.18 + phase + PI * 0.92, 64, Color(C_PEARL.r, C_PEARL.g, C_PEARL.b, 0.065), 1.1, true)
+	draw_string(ThemeDB.fallback_font, center + Vector2(-80.0, -10.0), value, HORIZONTAL_ALIGNMENT_CENTER, 160.0, 22, Color(C_PEARL.r, C_PEARL.g, C_PEARL.b, 0.90))
+	draw_string(ThemeDB.fallback_font, center + Vector2(-80.0, 20.0), label, HORIZONTAL_ALIGNMENT_CENTER, 160.0, 14, Color(0.78, 0.93, 1.0, 0.68))
+
+func draw_mission_capsules() -> void:
+	if screen != "result":
+		return
+	var shown: int = min(completed_run_missions.size(), 3)
+	if shown <= 0:
+		return
+	var start_y: float = 465.0
+	for i in range(shown):
+		var text_value: String = completed_run_missions[i].replace("✓ ", "")
+		if text_value.length() > 28:
+			text_value = text_value.substr(0, 27) + "…"
+		var center: Vector2 = Vector2(VIEW_W * 0.5, start_y + float(i) * 36.0)
+		var color: Color = C_JADE if i % 2 == 0 else C_CELESTIAL
+		draw_capsule(center, Vector2(470.0, 28.0), Color(color.r, color.g, color.b, 0.075))
+		draw_string(ThemeDB.fallback_font, center + Vector2(-226.0, 6.0), "✓ " + text_value, HORIZONTAL_ALIGNMENT_LEFT, 452.0, 14, Color(C_PEARL.r, C_PEARL.g, C_PEARL.b, 0.78))
+
 func draw_result_glow() -> void:
 	if screen != "result":
 		return
-	var center: Vector2 = Vector2(VIEW_W * 0.5, 315.0)
-	draw_circle(center, 260.0, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.045))
-	draw_arc(center, 190.0 + sin(pulse_time * 1.1) * 8.0, pulse_time * 0.16, pulse_time * 0.16 + PI * 1.55, 96, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.07), 3.0, true)
+	var center: Vector2 = Vector2(VIEW_W * 0.5, 260.0)
+	var alpha_in: float = clampf(result_reveal_timer * 1.8, 0.0, 1.0)
+	draw_rect(Rect2(Vector2.ZERO, Vector2(VIEW_W, VIEW_H)), Color(0.006, 0.018, 0.033, 0.28 * alpha_in))
+	draw_circle(center, 310.0, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.040 * alpha_in))
+	draw_circle(center + Vector2(0.0, 135.0), 430.0, Color(C_CELESTIAL.r, C_CELESTIAL.g, C_CELESTIAL.b, 0.018 * alpha_in))
+	draw_arc(center, 205.0 + sin(pulse_time * 1.1) * 8.0, pulse_time * 0.16, pulse_time * 0.16 + PI * 1.55, 112, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.095 * alpha_in), 3.0, true)
+	draw_arc(center, 252.0, -pulse_time * 0.11, -pulse_time * 0.11 + PI * 1.1, 112, Color(C_PEARL.r, C_PEARL.g, C_PEARL.b, 0.038 * alpha_in), 1.6, true)
+	draw_result_badge(Vector2(172.0, 392.0), "XP", "+%d" % int(result_count_xp), C_JADE, 0.0)
+	draw_result_badge(Vector2(360.0, 392.0), "CRISTAIS", "+%d" % int(result_count_crystals), C_GOLD, 0.8)
+	draw_result_badge(Vector2(548.0, 392.0), "BIOMA", str(get_current_biome()["name"]).split(" ")[0], C_CELESTIAL, 1.6)
+	draw_mission_capsules()
 
 func draw_premium_menu_glow() -> void:
 	if screen != "menu":
