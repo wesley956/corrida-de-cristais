@@ -50,6 +50,7 @@ func set_data(stage: String, xp: int, progress: float, next_circle: String, colo
 	bg.accent = color
 	orb.orb_color = color
 	orb.ring_count = max(1, ring_count)
+	orb.shape_variant = clampi(ring_count - 1, 0, 4)
 	stage_label.text = "%s\nXP de Cultivo · %d" % [stage, xp]
 	next_label.text = next_circle
 	xp_bar.value = clampf(progress, 0.0, 100.0)

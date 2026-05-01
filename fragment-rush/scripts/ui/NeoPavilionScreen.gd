@@ -60,7 +60,23 @@ func set_data(selected_id: String, selected_name: String, rarity: String, desc: 
 
 	bg.accent = color
 	orb.orb_color = color
+	orb.secondary_color = Color(0.92, 0.98, 1.0, 1.0)
 	orb.ring_count = max(1, ring_count)
+	match selected_id:
+		"semente_jade":
+			orb.shape_variant = 1
+			orb.secondary_color = FragmentUiTheme.JADE
+		"orbe_celestial":
+			orb.shape_variant = 2
+			orb.secondary_color = FragmentUiTheme.PEARL
+		"coracao_nebular":
+			orb.shape_variant = 3
+			orb.secondary_color = FragmentUiTheme.VIOLET
+		"essencia_dourada":
+			orb.shape_variant = 4
+			orb.secondary_color = FragmentUiTheme.GOLD
+		_:
+			orb.shape_variant = 0
 	name_label.text = selected_name
 	meta_label.text = "%s · %s" % [rarity, effect]
 	desc_label.text = desc

@@ -1,7 +1,7 @@
 extends Node2D
 
 # Fragment Rush: Corrida dos Cristais
-# v1.2.1 - Connected Neo UI Scenes
+# v1.3 - Formas e Rastros Premium
 # Runner mobile com atmosfera wuxia/cultivation: fluxo, ressonancia e ascensao.
 
 const SAVE_PATH: String = "user://fragment_rush_save.json"
@@ -134,6 +134,9 @@ var tutorial_seen: bool = false
 var current_biome_index: int = 0
 var rare_crystals_run: int = 0
 var circles_unlocked_run: int = 0
+var form_unlock_timer: float = 0.0
+var form_unlock_name: String = ""
+var form_unlock_skin: String = ""
 var crystal_rain_timer: float = 11.0
 var crystal_rain_active: float = 0.0
 var last_xp_gain: int = 0
@@ -1236,15 +1239,15 @@ func skin_rarity(skin_id: String) -> String:
 func skin_effect_text(skin_id: String) -> String:
 	match skin_id:
 		"semente_jade":
-			return "Afinidade: Chamado do Jade"
+			return "%s · Chamado do Jade" % skin_trail_name(skin_id)
 		"orbe_celestial":
-			return "Afinidade: XP espiritual"
+			return "%s · XP espiritual" % skin_trail_name(skin_id)
 		"coracao_nebular":
-			return "Afinidade: Ressonância"
+			return "%s · Ressonância" % skin_trail_name(skin_id)
 		"essencia_dourada":
-			return "Afinidade: Cristais raros"
+			return "%s · Cristais raros" % skin_trail_name(skin_id)
 		_:
-			return "Forma equilibrada"
+			return "%s · Equilíbrio" % skin_trail_name(skin_id)
 
 func rarity_color_text(rarity: String) -> Color:
 	match rarity:
@@ -1357,8 +1360,7 @@ func buy_or_select_skin(skin_id: String) -> void:
 		player_core.color = skin_color(selected_skin)
 		save_game()
 		update_shop_ui()
-		show_status("NOVA FORMA DESPERTA", C_GOLD)
-		spawn_shockwave(player.position, C_GOLD, 45.0, 230.0, 0.64)
+		trigger_form_unlock(skin_id)
 	else:
 		show_status("CRISTAIS INSUFICIENTES", Color(1.0, 0.72, 0.72, 1.0))
 		flash_alpha = maxf(flash_alpha, 0.07)
@@ -1440,6 +1442,41 @@ func get_next_unlock_hint() -> String:
 	var missing: int = max(0, cheapest_price - total_crystals)
 	return "Próxima forma: %s  •  faltam %d cristais" % [cheapest_name, missing]
 
+func spawn_skin_trail(real_delta: float) -> void:
+	var base_c: Color = skin_color(selected_skin)
+	var secondary: Color = skin_secondary_color(selected_skin)
+	var variant: int = skin_shape_variant(selected_skin)
+	var chance: float = 0.26 + float(variant) * 0.055
+	if flow_timer > 0.0:
+		chance += 0.20
+	if rng.randf() > chance:
+		return
+
+	var behind: Vector2 = player.position + Vector2(rng.randf_range(-34.0, 34.0), rng.randf_range(42.0, 88.0))
+	match variant:
+		1:
+			# Jade: fios suaves e partículas orgânicas
+			spawn_particle(behind, Color(base_c.r, base_c.g, base_c.b, 0.46), 3, 0.46)
+			if rng.randf() < 0.45:
+				spawn_particle(behind + Vector2(rng.randf_range(-18.0, 18.0), rng.randf_range(-12.0, 12.0)), Color(secondary.r, secondary.g, secondary.b, 0.34), 2, 0.52)
+		2:
+			# Celestial: brilho branco/azul limpo
+			spawn_particle(behind, Color(secondary.r, secondary.g, secondary.b, 0.52), 3, 0.38)
+			if rng.randf() < 0.30:
+				spawn_afterimage(player.position + Vector2(0.0, 22.0), secondary, 0.20)
+		3:
+			# Nebular: névoa roxa profunda
+			spawn_particle(behind, Color(base_c.r, base_c.g, base_c.b, 0.34), 5, 0.62)
+			if rng.randf() < 0.26:
+				spawn_particle(behind + Vector2(rng.randf_range(-36.0, 36.0), rng.randf_range(-10.0, 18.0)), Color(0.20, 0.12, 0.34, 0.30), 6, 0.72)
+		4:
+			# Dourada: faíscas e selos de ascensão
+			spawn_particle(behind, Color(base_c.r, base_c.g, base_c.b, 0.58), 4, 0.42)
+			if rng.randf() < 0.38:
+				spawn_shockwave(behind, base_c, 8.0, 46.0, 0.24)
+		_:
+			spawn_particle(behind, Color(base_c.r, base_c.g, base_c.b, 0.34), 2, 0.34)
+
 func update_game(delta: float, real_delta: float) -> void:
 	run_time += real_delta
 	difficulty += real_delta * 0.018
@@ -1486,6 +1523,7 @@ func update_game(delta: float, real_delta: float) -> void:
 			spawn_afterimage(player.position, player_core.color, 0.30)
 	if flow_timer > 0.0 and rng.randf() < 0.50:
 		spawn_particle(player.position + Vector2(rng.randf_range(-68.0, 68.0), rng.randf_range(-24.0, 62.0)), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.46), 3, 0.36)
+	spawn_skin_trail(real_delta)
 	if speed > 560.0 and rng.randf() < 0.08:
 		spawn_particle(player.position + Vector2(rng.randf_range(-42.0, 42.0), rng.randf_range(26.0, 72.0)), Color(C_CELESTIAL.r, C_CELESTIAL.g, C_CELESTIAL.b, 0.34), 2, 0.28)
 
@@ -1891,6 +1929,70 @@ func spawn_afterimage(pos: Vector2, color: Color, duration: float) -> void:
 	if afterimages.size() > 16:
 		afterimages.remove_at(0)
 
+func skin_secondary_color(skin_id: String) -> Color:
+	match skin_id:
+		"semente_jade":
+			return Color(0.74, 1.0, 0.83, 1.0)
+		"orbe_celestial":
+			return Color(0.92, 0.98, 1.0, 1.0)
+		"coracao_nebular":
+			return Color(0.22, 0.12, 0.42, 1.0)
+		"essencia_dourada":
+			return Color(1.0, 0.94, 0.70, 1.0)
+		_:
+			return Color(0.65, 0.96, 1.0, 1.0)
+
+func skin_trail_name(skin_id: String) -> String:
+	match skin_id:
+		"semente_jade":
+			return "Rastro de Jade"
+		"orbe_celestial":
+			return "Rastro Celestial"
+		"coracao_nebular":
+			return "Rastro Nebular"
+		"essencia_dourada":
+			return "Rastro Dourado"
+		_:
+			return "Rastro Cristalino"
+
+func skin_shape_variant(skin_id: String) -> int:
+	match skin_id:
+		"semente_jade":
+			return 1
+		"orbe_celestial":
+			return 2
+		"coracao_nebular":
+			return 3
+		"essencia_dourada":
+			return 4
+		_:
+			return 0
+
+func skin_rarity_power(skin_id: String) -> float:
+	match skin_rarity(skin_id):
+		"Raro":
+			return 1.15
+		"Épico":
+			return 1.35
+		"Lendário":
+			return 1.62
+		"Celestial":
+			return 1.85
+		_:
+			return 1.0
+
+func trigger_form_unlock(skin_id: String) -> void:
+	form_unlock_skin = skin_id
+	form_unlock_name = str(SKINS.get(skin_id, {}).get("name", "Nova Forma"))
+	form_unlock_timer = 2.8
+	flash_alpha = maxf(flash_alpha, 0.20)
+	camera_shake = maxf(camera_shake, 11.0)
+	spawn_shockwave(player.position, skin_color(skin_id), 52.0, 330.0, 0.82)
+	show_status("NOVA FORMA DESPERTA", skin_color(skin_id))
+	for _i in range(34):
+		var particle_pos: Vector2 = player.position + Vector2(rng.randf_range(-96.0, 96.0), rng.randf_range(-96.0, 96.0))
+		spawn_particle(particle_pos, Color(skin_color(skin_id).r, skin_color(skin_id).g, skin_color(skin_id).b, 0.86), 8, 0.72)
+
 func skin_color(skin: String) -> Color:
 	match skin:
 		"semente_jade":
@@ -1963,6 +2065,7 @@ func _draw() -> void:
 	draw_player_aura()
 	draw_resonance_circles()
 	draw_dash_meter()
+	draw_form_unlock_overlay()
 	draw_flash_overlay()
 
 func draw_biome_overlay() -> void:
@@ -2080,25 +2183,68 @@ func draw_visual_reboot_showcases() -> void:
 
 func draw_orb_preview(center: Vector2, radius: float, skin_id: String, power: float) -> void:
 	var c: Color = skin_color(skin_id)
-	draw_circle(center, radius * 2.35, Color(c.r, c.g, c.b, 0.060 + power * 0.025))
-	draw_circle(center, radius * 1.55, Color(c.r, c.g, c.b, 0.105 + power * 0.035))
-	for i in range(4):
-		var r: float = radius * (1.42 + float(i) * 0.22) + sin(pulse_time * 1.3 + float(i)) * 5.0
-		var start_angle: float = pulse_time * (0.24 + float(i) * 0.05) + float(i) * 0.75
-		var alpha: float = 0.14 - float(i) * 0.015 + power * 0.04
-		draw_arc(center, r, start_angle, start_angle + PI * (1.25 + float(i % 2) * 0.18), 96, Color(c.r, c.g, c.b, alpha), 2.8, true)
-		draw_arc(center, r * 0.86, -start_angle, -start_angle + PI * 0.70, 64, Color(C_PEARL.r, C_PEARL.g, C_PEARL.b, alpha * 0.45), 1.4, true)
+	var s: Color = skin_secondary_color(skin_id)
+	var variant: int = skin_shape_variant(skin_id)
+	var rarity_power: float = skin_rarity_power(skin_id)
+	draw_circle(center, radius * 2.70 * rarity_power, Color(c.r, c.g, c.b, 0.045 + power * 0.022))
+	draw_circle(center, radius * 1.70, Color(s.r, s.g, s.b, 0.060 + power * 0.030))
+
+	for i in range(5):
+		var r: float = radius * (1.34 + float(i) * 0.19) + sin(pulse_time * (1.0 + float(i) * 0.1) + float(i)) * (4.0 + float(variant))
+		var start_angle: float = pulse_time * (0.22 + float(i) * 0.052 + float(variant) * 0.012) + float(i) * 0.75
+		var ring_color: Color = c if i % 2 == 0 else s
+		var alpha: float = 0.12 - float(i) * 0.010 + power * 0.040
+		if variant == 4:
+			alpha += 0.035
+		draw_arc(center, r, start_angle, start_angle + PI * (1.14 + float(i % 2) * 0.22), 96, Color(ring_color.r, ring_color.g, ring_color.b, alpha), 2.2 + float(variant) * 0.12, true)
+		draw_arc(center, r * 0.82, -start_angle, -start_angle + PI * 0.62, 64, Color(C_PEARL.r, C_PEARL.g, C_PEARL.b, alpha * 0.45), 1.2, true)
+
 	var points: PackedVector2Array = PackedVector2Array()
-	for i in range(8):
-		var a: float = TAU * float(i) / 8.0 + pulse_time * 0.16
-		var rr: float = radius * (0.62 if i % 2 == 0 else 0.42)
+	var sides: int = 8
+	if variant == 1:
+		sides = 10
+	elif variant == 2:
+		sides = 12
+	elif variant == 3:
+		sides = 9
+	elif variant == 4:
+		sides = 14
+
+	for i in range(sides):
+		var a: float = TAU * float(i) / float(sides) + pulse_time * (0.10 + float(variant) * 0.015)
+		var alt: bool = i % 2 == 0
+		var rr: float = radius * (0.66 if alt else 0.44)
+		if variant == 1:
+			rr = radius * (0.70 if alt else 0.50)
+		elif variant == 2:
+			rr = radius * (0.74 if alt else 0.36)
+		elif variant == 3:
+			rr = radius * (0.70 if alt else 0.42) + sin(float(i) + pulse_time * 1.6) * 2.0
+		elif variant == 4:
+			rr = radius * (0.82 if alt else 0.52)
 		points.append(center + Vector2(cos(a), sin(a)) * rr)
-	draw_colored_polygon(points, Color(c.r, c.g, c.b, 0.80))
+
+	draw_colored_polygon(points, Color(c.r, c.g, c.b, 0.78))
 	var outline: PackedVector2Array = PackedVector2Array()
 	for outline_point in points:
 		outline.append(outline_point)
 	outline.append(points[0])
-	draw_polyline(outline, Color(C_PEARL.r, C_PEARL.g, C_PEARL.b, 0.68), 2.0)
+	draw_polyline(outline, Color(C_PEARL.r, C_PEARL.g, C_PEARL.b, 0.62), 2.0)
+
+	if variant == 1:
+		for i in range(4):
+			var a: float = pulse_time * 0.35 + float(i) * PI * 0.5
+			draw_line(center, center + Vector2(cos(a), sin(a)) * radius * 0.86, Color(s.r, s.g, s.b, 0.20), 2.0)
+	elif variant == 2:
+		draw_circle(center, radius * 0.46, Color(C_PEARL.r, C_PEARL.g, C_PEARL.b, 0.18))
+	elif variant == 3:
+		draw_circle(center + Vector2(sin(pulse_time * 1.3) * 4.0, cos(pulse_time * 1.1) * 4.0), radius * 0.42, Color(0.12, 0.06, 0.22, 0.34))
+	elif variant == 4:
+		for i in range(6):
+			var a: float = pulse_time * 0.45 + float(i) * TAU / 6.0
+			var p: Vector2 = center + Vector2(cos(a), sin(a)) * radius * 0.98
+			draw_circle(p, 3.2, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.62))
+
 	draw_circle(center, radius * 0.18 + sin(pulse_time * 4.0) * 2.0, Color(C_PEARL.r, C_PEARL.g, C_PEARL.b, 0.82))
 
 func draw_mini_form_node(center: Vector2, skin_id: String, selected: bool, locked: bool) -> void:
@@ -2241,6 +2387,22 @@ func draw_dash_meter() -> void:
 	else:
 		draw_circle(center, 6.0, Color(0.70, 0.88, 1.0, 0.42))
 
+func draw_form_unlock_overlay() -> void:
+	if form_unlock_timer <= 0.0:
+		return
+	var t: float = clampf(form_unlock_timer / 2.8, 0.0, 1.0)
+	var alpha: float = minf(1.0, t * 1.8)
+	var c: Color = skin_color(form_unlock_skin)
+	var center: Vector2 = Vector2(VIEW_W * 0.5, VIEW_H * 0.36)
+	draw_rect(Rect2(Vector2.ZERO, Vector2(VIEW_W, VIEW_H)), Color(0.0, 0.0, 0.0, 0.18 * alpha))
+	draw_circle(center, 260.0 * (1.0 + (1.0 - t) * 0.22), Color(c.r, c.g, c.b, 0.055 * alpha))
+	draw_orb_preview(center, 62.0 + sin(pulse_time * 4.0) * 2.0, form_unlock_skin, 0.85)
+	draw_arc(center, 158.0, pulse_time * 0.8, pulse_time * 0.8 + PI * 1.4, 120, Color(c.r, c.g, c.b, 0.26 * alpha), 3.0, true)
+	draw_arc(center, 196.0, -pulse_time * 0.6, -pulse_time * 0.6 + PI * 1.1, 120, Color(C_PEARL.r, C_PEARL.g, C_PEARL.b, 0.13 * alpha), 2.0, true)
+	draw_string(ThemeDB.fallback_font, Vector2(112.0, center.y + 230.0), "NOVA FORMA DESPERTA", HORIZONTAL_ALIGNMENT_CENTER, 496.0, 32, Color(C_PEARL.r, C_PEARL.g, C_PEARL.b, alpha))
+	draw_string(ThemeDB.fallback_font, Vector2(112.0, center.y + 278.0), form_unlock_name, HORIZONTAL_ALIGNMENT_CENTER, 496.0, 28, Color(c.r, c.g, c.b, alpha))
+	draw_string(ThemeDB.fallback_font, Vector2(112.0, center.y + 322.0), skin_trail_name(form_unlock_skin), HORIZONTAL_ALIGNMENT_CENTER, 496.0, 20, Color(0.82, 0.96, 1.0, 0.82 * alpha))
+
 func draw_flash_overlay() -> void:
 	if flash_alpha <= 0.001:
 		return
@@ -2350,20 +2512,63 @@ func draw_particles() -> void:
 		draw_circle(part_pos, part_size * alpha, c)
 
 func draw_player_aura() -> void:
-	if player == null:
-		return
+	var p: Vector2 = player.position
+	var c: Color = skin_color(selected_skin)
+	var s: Color = skin_secondary_color(selected_skin)
+	var variant: int = skin_shape_variant(selected_skin)
+	var rarity_power: float = skin_rarity_power(selected_skin)
 	var aura_power: float = clampf(resonance_value / 100.0, 0.0, 1.0)
 	if flow_timer > 0.0:
 		aura_power = 1.0
-	var breathe: float = 1.0 + sin(pulse_time * 3.2) * 0.05
-	var p: Vector2 = player.position
-	draw_circle(p, 112.0 * breathe + aura_power * 32.0, Color(C_CELESTIAL.r, C_CELESTIAL.g, C_CELESTIAL.b, 0.055 + aura_power * 0.08))
-	draw_circle(p, 70.0 * breathe + aura_power * 20.0, Color(C_JADE.r, C_JADE.g, C_JADE.b, 0.035 + aura_power * 0.06))
-	for i in range(3):
-		var r: float = 78.0 + float(i) * 18.0 + sin(pulse_time * 2.0 + float(i)) * 5.0
-		var start_angle: float = pulse_time * (0.55 + float(i) * 0.08) + float(i) * 0.9
-		var arc_color: Color = C_JADE if i % 2 == 0 else C_CELESTIAL
-		draw_arc(p, r, start_angle, start_angle + PI * 1.18, 64, Color(arc_color.r, arc_color.g, arc_color.b, 0.12 + aura_power * 0.10), 2.0, true)
+
+	draw_circle(p, 74.0 * rarity_power, Color(c.r, c.g, c.b, 0.038 + aura_power * 0.055))
+	draw_circle(p, 48.0 * rarity_power, Color(s.r, s.g, s.b, 0.030 + aura_power * 0.035))
+	for i in range(3 + min(variant, 2)):
+		var r: float = 50.0 + float(i) * 13.0 + sin(pulse_time * 2.0 + float(i)) * 4.0
+		var a: float = pulse_time * (0.55 + float(i) * 0.08) + float(i)
+		var ring_c: Color = c if i % 2 == 0 else s
+		draw_arc(p, r, a, a + PI * (1.0 + float(variant) * 0.08), 72, Color(ring_c.r, ring_c.g, ring_c.b, 0.10 + aura_power * 0.10), 2.0, true)
+
+	var sides: int = 4
+	if variant == 1:
+		sides = 6
+	elif variant == 2:
+		sides = 8
+	elif variant == 3:
+		sides = 5
+	elif variant == 4:
+		sides = 10
+
+	var pts: PackedVector2Array = PackedVector2Array()
+	for i in range(sides):
+		var a: float = TAU * float(i) / float(sides) + player.rotation + pulse_time * (0.05 + float(variant) * 0.015)
+		var rr: float = 29.0 if i % 2 == 0 else 21.0
+		if variant == 0:
+			rr = 34.0 if i % 2 == 0 else 24.0
+		elif variant == 1:
+			rr = 33.0 if i % 2 == 0 else 23.0
+		elif variant == 2:
+			rr = 36.0 if i % 2 == 0 else 18.0
+		elif variant == 3:
+			rr = 38.0 if i % 2 == 0 else 22.0
+		elif variant == 4:
+			rr = 39.0 if i % 2 == 0 else 25.0
+		pts.append(p + Vector2(cos(a), sin(a)) * rr * player.scale.x)
+	draw_colored_polygon(pts, Color(c.r, c.g, c.b, 0.84))
+	var outline: PackedVector2Array = PackedVector2Array()
+	for point in pts:
+		outline.append(point)
+	outline.append(pts[0])
+	draw_polyline(outline, Color(C_PEARL.r, C_PEARL.g, C_PEARL.b, 0.70), 2.2)
+
+	if variant == 3:
+		draw_circle(p, 18.0, Color(0.12, 0.05, 0.23, 0.38))
+	if variant == 4:
+		for i in range(5):
+			var a: float = pulse_time * 0.55 + float(i) * TAU / 5.0
+			draw_circle(p + Vector2(cos(a), sin(a)) * 43.0, 3.5, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.66))
+
+	draw_circle(p, 8.0 + sin(pulse_time * 5.0) * 1.4, Color(C_PEARL.r, C_PEARL.g, C_PEARL.b, 0.86))
 	if flow_timer > 0.0:
 		draw_circle(p, 158.0 + sin(pulse_time * 6.0) * 8.0, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.10))
 		draw_arc(p, 148.0, -pulse_time * 1.2, -pulse_time * 1.2 + PI * 1.55, 96, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.26), 3.0, true)
