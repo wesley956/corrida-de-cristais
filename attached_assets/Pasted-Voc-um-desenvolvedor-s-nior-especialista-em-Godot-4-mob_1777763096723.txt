@@ -1,0 +1,582 @@
+Você é um desenvolvedor sênior especialista em Godot 4, mobile games, game feel, UI/UX de jogos casuais, runners mobile e polimento para publicação.
+
+Quero reformular completamente este projeto Godot 4 chamado “Fragment Rush: Corrida dos Cristais”.
+
+IMPORTANTE:
+- Não transforme isso em outro tipo de projeto.
+- Continue usando Godot 4 e GDScript.
+- Não apague o projeto inteiro sem necessidade.
+- Não quebre a estrutura existente.
+- Preserve o jogo como um runner vertical de coleta e desvio.
+- O objetivo é transformar o jogo em algo moderno, fluido, bonito, viciante e publicável.
+- O jogo atual parece robótico e sem vida. Quero uma reformulação forte de sensação, visual, jogabilidade e progressão.
+- Faça alterações em etapas, mas entregue uma versão completa e jogável ao final.
+
+Antes de alterar qualquer coisa:
+1. Analise a estrutura atual do projeto.
+2. Verifique os arquivos:
+   - project.godot
+   - scenes/
+   - scripts/
+   - scripts/Main.gd
+   - scripts/core/
+   - scripts/ui/
+   - export_presets.cfg
+3. Explique rapidamente quais sistemas já existem.
+4. Explique quais arquivos serão modificados/criados.
+5. Depois implemente a reformulação.
+
+OBJETIVO DO JOGO:
+Criar um jogo mobile vertical chamado “Fragment Rush: Corrida dos Cristais”.
+
+Loop principal:
+- O jogador controla um personagem correndo automaticamente.
+- O jogador move o personagem para esquerda/direita ou arrasta na tela.
+- O personagem coleta cristais.
+- O personagem desvia de obstáculos.
+- A velocidade aumenta com o tempo.
+- O jogador faz combos coletando cristais sem errar.
+- O jogador pode usar dash.
+- Ao perder, aparece tela de resultado com pontuação, cristais ganhos, recorde e opções de jogar novamente.
+- O jogo precisa ser simples, rápido, viciante e bonito.
+
+DIREÇÃO VISUAL:
+O jogo deve ter visual moderno, thema de cultivaçao wuxia, energético, polido e fluido.
+Não quero aparência quadrada, fria, robótica ou de protótipo.
+Quero algo com sensação de jogo mobile atual.
+
+ESTÉTICA E DIREÇÃO VISUAL:
+
+Quero alterar completamente a estética do jogo para uma direção mais única, moderna e inspirada em wuxia.
+
+Nova estética desejada:
+- Fundo escuro verde, com atmosfera espiritual e bambuzais.
+- O jogo deve ter vários ambientes inspirados em contos de wuxia.
+- O visual precisa parecer mais vivo, bonito e atmosférico, e não algo robótico ou genérico.
+- Quero uma mistura de ação arcade mobile com ambientação mística/oriental.
+
+Direção visual obrigatória:
+1. Fundo principal com tons verdes escuros, verde jade, preto esverdeado e névoa leve.
+2. Elementos de bambu no cenário, com profundidade visual e parallax.
+3. Ambientes temáticos inspirados em wuxia, como:
+   - Floresta de Bambu Noturna
+   - Ponte Suspensa na Névoa
+   - Vale Espiritual de Jade
+   - Ruínas do Pavilhão Antigo
+   - Penhascos com Lanternas e Névoa
+   - Templo Esquecido entre Bambus
+   - Jardim Marcial ao Entardecer
+   - Trilha do Mestre Errante
+4. Partículas suaves no cenário:
+   - poeira espiritual
+   - folhas de bambu passando
+   - brilhos sutis
+   - névoa leve
+   - faíscas de energia ao coletar cristais
+5. Cristais com brilho forte e aparência valiosa.
+6. Obstáculos com visual de fragmentos perigosos, espinhos, lâminas, pedras místicas, colunas quebradas, troncos cortados, lanças, barreiras espirituais e ruínas marciais.
+7. O player deve ter rastro de movimento.
+8. UI arredondada, limpa, moderna e bonita.
+9. Animações suaves e elegantes.
+10. Feedback visual forte ao:
+   - coletar cristal
+   - bater em obstáculo
+   - usar dash
+   - fazer combo
+
+QUALIDADE VISUAL:
+- O jogo precisa parecer moderno.
+- Não quero aparência quadrada, fria, robótica ou com cara de protótipo cru.
+- Quero algo estilizado, bonito, leve e agradável de jogar.
+- A identidade visual deve lembrar um mundo de ação mística oriental, mas ainda funcionar como jogo mobile casual/rush.
+
+JOGABILIDADE E RITMO:
+- A jogabilidade deve começar lenta e ir aumentando aos poucos.
+- O começo da partida precisa ser confortável e fácil de entender.
+- A velocidade deve crescer progressivamente com boa curva de dificuldade.
+- O jogo não deve ficar impossível rápido demais.
+- O aumento de velocidade deve ser suave, perceptível e divertido.
+
+AMBIENTES:
+Quero sistema de variação de ambientes ao longo da corrida ou por progressão de distância.
+Cada ambiente deve ter:
+- fundo próprio
+- clima visual próprio
+- leve diferença de paleta
+- elementos decorativos específicos
+- sensação de jornada
+
+Ambientes sugeridos:
+1. Floresta de Bambu Noturna
+   - bambus escuros
+   - névoa verde
+   - folhas voando
+2. Ponte Suspensa na Névoa
+   - ponte de madeira
+   - abismo ao fundo
+   - lanternas
+3. Vale Espiritual de Jade
+   - brilho verde jade
+   - energia espiritual
+   - cristais maiores
+4. Ruínas do Pavilhão Antigo
+   - estruturas quebradas
+   - colunas antigas
+   - chão rachado
+5. Templo Esquecido entre Bambus
+   - arquitetura antiga
+   - estátuas
+   - portões
+6. Penhascos do Mestre Errante
+   - vento
+   - névoa
+   - atmosfera solene
+
+EFEITOS VISUAIS:
+- Ao coletar cristais:
+  - brilho rápido
+  - partículas
+  - pequeno impulso visual
+- Ao usar dash:
+  - rastro mais forte
+  - afterimage
+  - distorção ou flash
+- Ao fazer combo:
+  - intensificar brilho
+  - UI reagir
+  - aura mais forte no personagem
+- Ao bater:
+  - impacto visual forte
+  - flash
+  - fragmentação/energia dissipando
+
+PERSONAGEM:
+- O personagem principal continua sendo um stickman original.
+- Mas agora ele deve combinar com essa estética wuxia/mística.
+- Ele pode ser um “corredor marcial espiritual”.
+- O visual deve ter:
+  - silhueta simples
+  - traços limpos
+  - leve brilho verde/jade/ciano
+  - rastro elegante
+  - sensação de artista marcial veloz
+
+HUD E UI:
+- UI arredondada e moderna.
+- Paleta alinhada com verde jade, verde escuro, dourado suave e detalhes claros.
+- Botões com cantos arredondados.
+- Painéis com transparência leve.
+- Nada de menu duro ou feio.
+- HUD deve ser clara, elegante e não poluir a tela.
+
+OBJETIVO:
+Transformar o jogo em uma experiência visualmente bonita, fluida e moderna, com identidade forte baseada em bambus, wuxia e energia espiritual, mantendo o loop de runner/coleta/desvio. Paleta: fundo azul escuro/preto, ciano, roxo, magenta, dourado, verde jade.
+
+PERSONAGEM PRINCIPAL:
+Substituir o player atual/núcleo/orbe por um personagem stickman original.
+
+IMPORTANTE:
+- Não copiar Stick Fight.
+- Não usar assets, nomes ou estilo idêntico de jogos existentes.
+- O personagem deve ser um stickman original do Fragment Rush.
+
+Visual do personagem:
+- Cabeça circular simples.
+- Corpo e membros finos.
+- Visual limpo e legível em tela pequena.
+- Contorno/brilho neon.
+- Pequeno cristal brilhante no peito.
+- Rastro de energia ao se mover.
+- Inclinação ao trocar de direção.
+- Pose especial no dash.
+- Flash ao coletar cristal.
+- Animação/efeito de impacto ao bater.
+
+Criar o personagem de forma organizada:
+- Se o player atual é desenhado por código, separar funções de desenho.
+- Se for melhor, criar:
+  - scenes/entities/StickRunner.tscn
+  - scripts/entities/StickRunner.gd
+- O personagem deve ter estados:
+  - idle/run
+  - moving_left
+  - moving_right
+  - dash
+  - hit
+  - revive/respawn se existir
+- O personagem deve responder visualmente ao movimento.
+
+JOGABILIDADE:
+Reformular a jogabilidade para ficar mais fluida e viciante.
+
+Melhorias obrigatórias:
+1. Movimento mais suave e responsivo.
+2. Controle por toque/arrasto melhorado para mobile.
+3. Controle por teclado mantido para testar no navegador.
+4. Hitbox justa: não pode parecer que o jogador perdeu injustamente.
+5. Obstáculos com padrões mais interessantes, não apenas aleatórios.
+6. Cristais colocados em rotas que incentivem risco e recompensa.
+7. Velocidade aumenta gradualmente.
+8. Dificuldade aumenta de forma divertida, não impossível do nada.
+9. Dash com cooldown claro e feedback visual.
+10. Combo recompensador.
+11. Magnet/power-up se já existir, melhorar feedback.
+12. Coleta deve gerar partículas e som/feedback.
+13. Ao quase bater, adicionar leve tensão visual se possível.
+14. Ao bater, impacto visual bonito e tela de game over rápida.
+
+CONTROLES:
+Mobile:
+- Arrastar o dedo para mover o personagem.
+- Também aceitar toque em esquerda/direita se já houver faixas.
+- Controle deve parecer suave, não travado.
+
+Desktop/web:
+- Setas ou A/D para mover.
+- Espaço ou Shift para dash.
+- Enter para iniciar/reiniciar.
+
+MODOS DE MOVIMENTO:
+Se o jogo usa movimento por faixas, melhorar a transição entre faixas com interpolação suave.
+Se o jogo usa movimento livre, limitar bem a área da pista.
+Escolha a opção mais segura com base no código atual, mas priorize jogabilidade mobile fluida.
+
+OBSTÁCULOS:
+Atualizar visual e comportamento dos obstáculos:
+- Fragmentos escuros/cristalinos.
+- Brilho vermelho/roxo perigoso.
+- Leve rotação/flutuação.
+- Padrões variados:
+  - obstáculo único
+  - parede com abertura
+  - sequência alternada
+  - corredor estreito
+  - obstáculo falso/menor
+  - linha de risco com cristal no meio
+- Evitar padrões injustos.
+
+CRISTAIS:
+Atualizar cristais:
+- Cristais com brilho.
+- Pulsar suavemente.
+- Partículas ao coletar.
+- Cores por raridade:
+  - comum: ciano
+  - raro: verde jade
+  - épico: roxo
+  - lendário: dourado
+- Cristais raros devem valer mais.
+- Coletar cristais em sequência aumenta combo.
+
+POWER-UPS:
+Se já existirem, melhorar. Se não existirem, adicionar sistema simples:
+1. Ímã de Cristais
+   - atrai cristais próximos por alguns segundos.
+2. Escudo
+   - protege de uma colisão.
+3. Fluxo
+   - diminui sensação de perigo ou aumenta pontuação por alguns segundos.
+4. Dash carregado
+   - dash mais forte ou cooldown reduzido temporário.
+
+Não precisa criar muitos power-ups complexos. O importante é ficarem claros e bonitos.
+
+COMBO:
+Criar ou melhorar sistema de combo:
+- Combo aumenta ao coletar cristais em sequência.
+- Combo quebra ao bater/perder ou passar muito tempo sem coletar.
+- Exibir multiplicador de combo no HUD.
+- Ao atingir combos altos, mudar efeitos visuais:
+  - x5: brilho leve
+  - x10: rastro mais forte
+  - x20: efeito de fluxo/neon
+- Combo deve dar mais pontos/cristais.
+
+HUD:
+Criar HUD moderna, limpa e mobile:
+- Pontuação no topo.
+- Recorde discreto.
+- Cristais coletados.
+- Combo.
+- Distância.
+- Dash cooldown visual.
+- Power-up ativo.
+- Não poluir a tela.
+
+Tela inicial:
+Criar/modernizar menu principal com:
+- Logo “Fragment Rush”
+- Subtítulo “Corrida dos Cristais”
+- Botão grande “Jogar”
+- Botão “Personagens”
+- Botão “Loja”
+- Botão “Como Jogar”
+- Botão “Configurações”
+- Visual neon/cósmico com partículas.
+- Animação leve no fundo.
+- Nada de tela quadrada sem graça.
+
+Tutorial:
+Adicionar tutorial simples e bonito.
+
+Tutorial deve ensinar:
+1. Arraste para mover.
+2. Desvie dos fragmentos.
+3. Colete cristais.
+4. Faça combo.
+5. Use dash.
+6. Pegue power-ups.
+7. Tente bater seu recorde.
+
+Tutorial deve aparecer:
+- Na primeira vez que o jogador abre o jogo.
+- Poder ser acessado pelo menu “Como Jogar”.
+- Deve ser curto, visual e prático.
+- Não usar textos enormes.
+
+Personagens e skins:
+Adicionar tela de personagens/skins.
+
+Criar pelo menos 8 personagens/skins:
+1. Corredor Ciano - inicial
+2. Corredor Jade
+3. Corredor Rubi
+4. Corredor Nebular
+5. Corredor Dourado
+6. Corredor Sombrio
+7. Corredor Celestial
+8. Corredor Fragmentado
+
+Cada skin deve ter:
+- Nome
+- Cor principal
+- Cor do brilho
+- Cor do rastro
+- Pequena descrição
+- Preço em cristais
+- Estado bloqueada/desbloqueada
+- Botão comprar/equipar
+- Preview visual do stickman
+
+Não precisa usar imagens externas. Pode desenhar por código usando Godot, desde que fique bonito e legível.
+
+Loja/Progressão:
+Adicionar ou melhorar economia simples:
+- Cristais coletados nas partidas são moeda.
+- Jogador usa cristais para comprar skins.
+- Jogador pode melhorar alguns upgrades simples.
+
+Upgrades sugeridos:
+1. Dash melhorado
+   - reduz cooldown ou aumenta duração.
+2. Magnetismo
+   - aumenta alcance do ímã.
+3. Combo estável
+   - combo demora mais para quebrar.
+4. Sorte cristalina
+   - aumenta chance de cristal raro.
+5. Escudo inicial
+   - chance de começar com escudo.
+
+Salvar tudo localmente:
+- Cristais totais.
+- Recorde.
+- Skins compradas.
+- Skin equipada.
+- Tutorial visto.
+- Upgrades.
+- Configurações.
+
+Missões:
+Adicionar sistema simples de missões:
+- Coletar 50 cristais.
+- Sobreviver 60 segundos.
+- Fazer combo x10.
+- Usar dash 5 vezes.
+- Coletar 3 cristais raros.
+- Jogar 3 partidas.
+- Bater recorde.
+
+Missões devem dar cristais como recompensa.
+Pode ter 3 missões diárias simples.
+Se o sistema de data for complexo, criar missões fixas/rotativas simples por enquanto.
+
+Recompensa diária:
+Adicionar recompensa diária simples:
+- Ao abrir o jogo, se for um novo dia, dar bônus de cristais.
+- Mostrar popup bonito.
+- Recompensas progressivas simples:
+  dia 1: 50 cristais
+  dia 2: 75 cristais
+  dia 3: 100 cristais
+  dia 4: 150 cristais
+  dia 5: 250 cristais
+
+Se ficar muito complexo, criar estrutura pronta e simples.
+
+Game Over:
+Criar tela de resultado moderna:
+- Pontuação final.
+- Recorde.
+- Distância.
+- Cristais coletados.
+- Bônus de combo.
+- Missões concluídas.
+- Botão “Jogar Novamente”
+- Botão “Menu”
+- Botão “Continuar” como placeholder de anúncio recompensado.
+
+O botão “Continuar” deve existir como preparação para monetização, mas sem integrar anúncio real agora.
+Quando clicado, pode usar uma lógica temporária:
+- permitir continuar 1 vez por partida;
+- mostrar texto “Anúncio recompensado será integrado depois”.
+
+Monetização futura:
+Não integrar AdMob real agora, porque precisa configuração externa.
+Mas preparar placeholders:
+- Botão “Reviver com anúncio”
+- Botão “Dobrar cristais”
+- Espaço no código para integrar SDK depois
+- Comentar claramente onde a monetização entraria.
+
+Sons e feedback:
+Se não houver assets de áudio, criar estrutura para áudio:
+- coleta
+- dash
+- impacto
+- botão
+- power-up
+- game over
+- combo alto
+
+Se não existirem arquivos de áudio, o código deve estar preparado, mas não quebrar.
+Adicionar feedback visual mesmo sem áudio.
+
+Vibração:
+Se Godot suportar no target, preparar feedback de vibração/haptic:
+- coleta leve
+- dash médio
+- impacto forte
+Não deixar quebrar no web.
+
+UI/UX:
+Todas as telas devem ser modernas:
+- botões arredondados
+- cores neon
+- gradientes ou transparências
+- sombras/brilhos
+- animações de entrada
+- feedback ao clicar
+- texto legível em celular
+- layout responsivo
+
+Telas necessárias:
+1. Menu principal
+2. Jogo
+3. Game Over/Resultados
+4. Personagens/Skins
+5. Loja/Upgrades
+6. Tutorial/Como Jogar
+7. Configurações
+8. Missões/Recompensas se possível
+
+Configurações:
+Adicionar tela simples:
+- Som ligado/desligado
+- Música ligada/desligada
+- Vibração ligada/desligada
+- Qualidade visual: Baixa/Média/Alta
+- Resetar progresso com confirmação
+
+Performance:
+O jogo precisa rodar leve no navegador e em Android.
+Evitar:
+- partículas exageradas demais
+- muitos nodes sem necessidade
+- shaders pesados
+- imagens muito grandes
+- loops caros
+
+Organização do código:
+Se scripts/Main.gd estiver enorme, organizar gradualmente.
+Criar scripts separados quando fizer sentido:
+- scripts/entities/StickRunner.gd
+- scripts/entities/Obstacle.gd
+- scripts/entities/Crystal.gd
+- scripts/systems/SpawnDirector.gd
+- scripts/systems/GameBalance.gd
+- scripts/systems/Progression.gd
+- scripts/systems/Missions.gd
+- scripts/systems/SkinDatabase.gd
+- scripts/ui/HudController.gd
+- scripts/ui/MenuController.gd
+
+Mas não faça refatoração destrutiva.
+Priorize funcionar.
+
+Balanceamento inicial:
+Use valores equilibrados:
+- Partida inicial fácil nos primeiros 20 segundos.
+- Aumentar dificuldade a cada 15-20 segundos.
+- Cristais comuns aparecem bastante.
+- Cristais raros aparecem pouco.
+- Power-ups aparecem ocasionalmente.
+- Dash deve ajudar, mas não tornar o jogo fácil demais.
+- Hitbox do player deve ser menor que o visual para ser justo.
+
+Qualidade esperada:
+O resultado final precisa parecer:
+- moderno
+- fluido
+- jogável
+- mobile-first
+- com identidade própria
+- pronto para continuar até publicação
+
+Não quero:
+- jogo com cara de protótipo cru
+- player genérico/orbe sem personalidade
+- botões quadrados feios
+- movimento duro
+- colisão injusta
+- tela poluída
+- sistemas quebrados
+
+Testes obrigatórios:
+Depois de implementar:
+1. Verificar se o projeto abre.
+2. Verificar se o menu funciona.
+3. Verificar se dá para iniciar partida.
+4. Verificar movimento teclado.
+5. Verificar controle mobile/toque se possível.
+6. Verificar coleta de cristais.
+7. Verificar colisão com obstáculos.
+8. Verificar dash.
+9. Verificar game over.
+10. Verificar compra/equipar skin.
+11. Verificar save/load.
+12. Verificar tutorial.
+13. Verificar se não há erros críticos no console.
+
+Export Web:
+Não quebre o export Web.
+Se houver build/web, atualizar somente se conseguir exportar corretamente.
+Se não conseguir exportar pelo ambiente, explique como testar no editor Godot.
+
+Git:
+Faça alterações organizadas.
+Ao final, rode:
+- git status
+Explique quais arquivos foram modificados.
+Não inclua arquivos temporários, build pesada, .godot, .import, apk ou zip no commit.
+
+Entrega final:
+Ao terminar, me responda com:
+1. Resumo do que foi alterado.
+2. Arquivos principais modificados/criados.
+3. Como testar no Replit/web.
+4. Como testar no Godot.
+5. Próximos passos para transformar em APK Android.
+6. Pendências restantes, se houver.
+
+Comece agora analisando a estrutura do projeto e depois implemente a reformulação completa em etapas seguras.
