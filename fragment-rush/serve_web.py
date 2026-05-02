@@ -1,3 +1,4 @@
+import os
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 
 class Handler(SimpleHTTPRequestHandler):
@@ -14,6 +15,7 @@ class Handler(SimpleHTTPRequestHandler):
             return "application/octet-stream"
         return super().guess_type(path)
 
-server = ThreadingHTTPServer(("0.0.0.0", 8080), Handler)
-print("Fragment Rush rodando em http://localhost:8080")
+os.chdir(os.path.join(os.path.dirname(__file__), "build", "web"))
+server = ThreadingHTTPServer(("0.0.0.0", 5000), Handler)
+print("Fragment Rush rodando em http://0.0.0.0:5000")
 server.serve_forever()
