@@ -34,6 +34,15 @@ var obstacle_rock_png: Texture2D = null
 
 var entity_png_loaded: bool = false
 
+var vfx_pickup_png: Texture2D = null
+var vfx_dash_png: Texture2D = null
+var vfx_trail_png: Texture2D = null
+var vfx_impact_png: Texture2D = null
+var vfx_combo_png: Texture2D = null
+var vfx_aura_png: Texture2D = null
+var vfx_png_loaded: bool = false
+var vfx_png_sprites: Array[Dictionary] = []
+
 # Wuxia Color Palette
 const C_BG_DEEP: Color    = Color(0.010, 0.036, 0.016, 1.0)
 const C_BG_MID: Color     = Color(0.018, 0.060, 0.028, 1.0)
@@ -1017,6 +1026,8 @@ func _collect_crystal(e: Dictionary) -> void:
 	max_combo_run = maxi(max_combo_run, combo)
 	if combo > 1:
 		combo_pop_timer = 1.0
+	if combo >= 5 and combo % 5 == 0:
+		_spawn_vfx_png(Vector2(float(e["x"]), float(e["y"])), "combo", ctype["glow"], 150.0, 0.38, rng.randf() * TAU)
 	resonance_value = minf(resonance_value + 8.0 + float(combo) * 0.6, 100.0)
 	if resonance_value >= 100.0 and flow_timer <= 0.0:
 		activate_flow_state()
@@ -1026,6 +1037,7 @@ func _collect_crystal(e: Dictionary) -> void:
 	for _i in range(6):
 		spawn_particle(cpos + Vector2(rng.randf_range(-14.0, 14.0), rng.randf_range(-14.0, 14.0)), cclr, 5, 0.30)
 	spawn_shockwave(cpos, cglow, 8.0, 52.0, 0.22)
+	_spawn_vfx_png(cpos, "pickup", cglow, 92.0, 0.25, rng.randf() * TAU)
 	flash_alpha = maxf(flash_alpha, 0.03)
 	if str(e.get("crystal_type", "common")) != "common":
 		rare_crystals_run += 1
@@ -1045,6 +1057,7 @@ func _hit_obstacle() -> void:
 	camera_shake = maxf(camera_shake, 14.0)
 	flash_alpha = maxf(flash_alpha, 0.28)
 	spawn_shockwave(player.position, C_RUBY, 22.0, 160.0, 0.42)
+	_spawn_vfx_png(player.position, "impact", C_RUBY, 190.0, 0.40, rng.randf() * TAU)
 	for _i in range(14):
 		spawn_particle(player.position + Vector2(rng.randf_range(-50.0, 50.0), rng.randf_range(-50.0, 50.0)), Color(C_RUBY.r, C_RUBY.g, C_RUBY.b, 0.76), 6, 0.38)
 	show_status("FRAGMENTADO", C_RUBY)
@@ -1132,6 +1145,8 @@ func do_dash() -> void:
 	invulnerable_timer = maxf(invulnerable_timer, 0.38)
 	dashes_used_run += 1
 	spawn_afterimage(player.position, skin_glow_color(selected_skin), 0.26)
+	_spawn_vfx_png(player.position + Vector2(0, 34), "dash", skin_glow_color(selected_skin), 160.0, 0.24, -PI * 0.5)
+	_spawn_vfx_png(player.position + Vector2(0, 64), "trail", skin_glow_color(selected_skin), 128.0, 0.32, -PI * 0.5)
 	spawn_shockwave(player.position, skin_glow_color(selected_skin), 12.0, 80.0, 0.28)
 	for _i in range(8):
 		spawn_particle(player.position + Vector2(rng.randf_range(-30.0, 30.0), rng.randf_range(0.0, 48.0)), skin_glow_color(selected_skin), 5, 0.22)
@@ -1146,6 +1161,7 @@ func activate_flow_state() -> void:
 	camera_shake = maxf(camera_shake, 8.0)
 	combo_pop_timer = 1.0
 	spawn_afterimage(player.position, C_GOLD, 0.55)
+	_spawn_vfx_png(player.position, "aura", C_GOLD, 240.0, 0.70, 0.0)
 	spawn_shockwave(player.position, C_GOLD, 48.0, 260.0, 0.72)
 	show_status("ESTADO DE FLUXO  •  CÍRCULOS %d/%d" % [unlocked_circle_count(), RESONANCE_CIRCLES.size()], C_GOLD)
 	for _i in range(28):
@@ -1765,6 +1781,7 @@ func _update_menu_motion(_delta: float) -> void:
 	pass
 
 func _update_impact_fx(delta: float) -> void:
+	_update_vfx_png(delta)
 	var remove_sw: Array[int] = []
 	for i in range(shockwaves.size()):
 		var sw := shockwaves[i]
@@ -1966,6 +1983,7 @@ func _draw() -> void:
 	_draw_skin_trails()
 	_draw_particles()
 	_draw_shockwaves()
+	_draw_vfx_png_overlays()
 	_draw_player()
 	_draw_player_aura()
 	_draw_resonance_circles()
@@ -2468,6 +2486,118 @@ func _draw_obstacle_png_overlay(pos: Vector2, otype: String) -> void:
 
 	draw_circle(pos, maxf(size_px.x, size_px.y) * 0.46, Color(danger.r, danger.g, danger.b, 0.14))
 	_draw_entity_png_center(tex, pos, size_px, Color(1, 1, 1, 1), rot)
+
+
+func _load_vfx_png_direct(path: String) -> Texture2D:
+	var tex: Texture2D = load(path) as Texture2D
+
+	if tex == null:
+		push_warning("VFX PNG nao carregou: " + path)
+
+	return tex
+
+func _ensure_vfx_png_loaded() -> void:
+	if vfx_png_loaded:
+		return
+
+	vfx_png_loaded = true
+
+	vfx_pickup_png = _load_vfx_png_direct("res://assets/vfx/vfx_pickup_burst.png")
+	vfx_dash_png = _load_vfx_png_direct("res://assets/vfx/vfx_dash_smear.png")
+	vfx_trail_png = _load_vfx_png_direct("res://assets/vfx/vfx_trail_streak.png")
+	vfx_impact_png = _load_vfx_png_direct("res://assets/vfx/vfx_impact_flash.png")
+	vfx_combo_png = _load_vfx_png_direct("res://assets/vfx/vfx_combo_burst.png")
+	vfx_aura_png = _load_vfx_png_direct("res://assets/vfx/vfx_aura_ring.png")
+
+func _spawn_vfx_png(pos: Vector2, kind: String, color: Color, size_px: float, duration: float, rotation: float = 0.0) -> void:
+	vfx_png_sprites.append({
+		"pos": pos,
+		"kind": kind,
+		"color": color,
+		"size": size_px,
+		"duration": duration,
+		"age": 0.0,
+		"rotation": rotation
+	})
+
+	if vfx_png_sprites.size() > 64:
+		vfx_png_sprites.remove_at(0)
+
+func _update_vfx_png(delta: float) -> void:
+	var remove_list: Array[int] = []
+
+	for i: int in range(vfx_png_sprites.size()):
+		var vf: Dictionary = vfx_png_sprites[i]
+		vf["age"] = float(vf["age"]) + delta
+		vfx_png_sprites[i] = vf
+
+		if float(vf["age"]) >= float(vf["duration"]):
+			remove_list.append(i)
+
+	remove_list.reverse()
+
+	for idx: int in remove_list:
+		vfx_png_sprites.remove_at(idx)
+
+func _draw_vfx_png_center(tex: Texture2D, center: Vector2, size_px: Vector2, tint: Color, rotation: float) -> void:
+	if tex == null:
+		return
+
+	draw_set_transform(center, rotation, Vector2.ONE)
+	draw_texture_rect(
+		tex,
+		Rect2(-size_px.x * 0.5, -size_px.y * 0.5, size_px.x, size_px.y),
+		false,
+		tint
+	)
+	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+
+func _draw_vfx_png_overlays() -> void:
+	if screen not in ["game", "countdown", "pause"]:
+		return
+
+	_ensure_vfx_png_loaded()
+
+	for item: Variant in vfx_png_sprites:
+		if typeof(item) != TYPE_DICTIONARY:
+			continue
+
+		var vf: Dictionary = item
+
+		var pos: Vector2 = vf["pos"]
+		var kind: String = str(vf.get("kind", "pickup"))
+		var color: Color = vf["color"]
+		var size_px: float = float(vf.get("size", 96.0))
+		var duration: float = maxf(float(vf.get("duration", 0.25)), 0.001)
+		var age: float = float(vf.get("age", 0.0))
+		var rotation: float = float(vf.get("rotation", 0.0))
+
+		var tex: Texture2D = vfx_pickup_png
+
+		match kind:
+			"dash":
+				tex = vfx_dash_png
+			"trail":
+				tex = vfx_trail_png
+			"impact":
+				tex = vfx_impact_png
+			"combo":
+				tex = vfx_combo_png
+			"aura":
+				tex = vfx_aura_png
+			_:
+				tex = vfx_pickup_png
+
+		var progress: float = clampf(age / duration, 0.0, 1.0)
+		var alpha: float = 1.0 - progress
+		var scale_boost: float = 1.0 + progress * 0.38
+		var final_size: Vector2 = Vector2(size_px, size_px) * scale_boost
+
+		if tex != null:
+			_draw_vfx_png_center(tex, pos, final_size, Color(color.r, color.g, color.b, alpha), rotation)
+		else:
+			draw_circle(pos, size_px * 0.18 * scale_boost, Color(color.r, color.g, color.b, alpha * 0.70))
+
 
 func _draw_entity_png_overlays() -> void:
 	if screen not in ["game", "countdown", "pause"]:
