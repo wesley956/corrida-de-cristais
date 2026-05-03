@@ -1,0 +1,366 @@
+[
+  {
+    "type": "character_frame",
+    "file": "assets/characters/stick_runner/frames/run/run_01.png",
+    "source": "Run loop/ChatGPT Image 2 de mai. de 2026, 23_44_36 (1).png",
+    "animation": "run",
+    "frame": 1
+  },
+  {
+    "type": "character_frame",
+    "file": "assets/characters/stick_runner/frames/run/run_02.png",
+    "source": "Run loop/ChatGPT Image 2 de mai. de 2026, 23_44_36 (2).png",
+    "animation": "run",
+    "frame": 2
+  },
+  {
+    "type": "character_frame",
+    "file": "assets/characters/stick_runner/frames/run/run_03.png",
+    "source": "Run loop/ChatGPT Image 2 de mai. de 2026, 23_44_36 (3).png",
+    "animation": "run",
+    "frame": 3
+  },
+  {
+    "type": "character_frame",
+    "file": "assets/characters/stick_runner/frames/run/run_04.png",
+    "source": "Run loop/ChatGPT Image 2 de mai. de 2026, 23_44_36 (4).png",
+    "animation": "run",
+    "frame": 4
+  },
+  {
+    "type": "character_frame",
+    "file": "assets/characters/stick_runner/frames/run/run_05.png",
+    "source": "Run loop/ChatGPT Image 2 de mai. de 2026, 23_44_37 (5).png",
+    "animation": "run",
+    "frame": 5
+  },
+  {
+    "type": "character_frame",
+    "file": "assets/characters/stick_runner/frames/run/run_06.png",
+    "source": "Run loop/ChatGPT Image 2 de mai. de 2026, 23_44_37 (6).png",
+    "animation": "run",
+    "frame": 6
+  },
+  {
+    "type": "character_frame",
+    "file": "assets/characters/stick_runner/frames/run/run_07.png",
+    "source": "Run loop/ChatGPT Image 2 de mai. de 2026, 23_44_38 (7).png",
+    "animation": "run",
+    "frame": 7
+  },
+  {
+    "type": "character_frame",
+    "file": "assets/characters/stick_runner/frames/run/run_08.png",
+    "source": "Run loop/ChatGPT Image 2 de mai. de 2026, 23_44_38 (8).png",
+    "animation": "run",
+    "frame": 8
+  },
+  {
+    "type": "character_frame",
+    "file": "assets/characters/stick_runner/frames/dash/dash_01.png",
+    "source": "dash/ChatGPT Image 2 de mai. de 2026, 23_46_03 (1).png",
+    "animation": "dash",
+    "frame": 1
+  },
+  {
+    "type": "character_frame",
+    "file": "assets/characters/stick_runner/frames/dash/dash_02.png",
+    "source": "dash/ChatGPT Image 2 de mai. de 2026, 23_46_06 (2).png",
+    "animation": "dash",
+    "frame": 2
+  },
+  {
+    "type": "character_frame",
+    "file": "assets/characters/stick_runner/frames/dash/dash_03.png",
+    "source": "dash/ChatGPT Image 2 de mai. de 2026, 23_46_06 (3).png",
+    "animation": "dash",
+    "frame": 3
+  },
+  {
+    "type": "character_frame",
+    "file": "assets/characters/stick_runner/frames/dash/dash_04.png",
+    "source": "dash/ChatGPT Image 2 de mai. de 2026, 23_46_06 (4).png",
+    "animation": "dash",
+    "frame": 4
+  },
+  {
+    "type": "character_frame",
+    "file": "assets/characters/stick_runner/frames/dash/dash_05.png",
+    "source": "dash/ChatGPT Image 2 de mai. de 2026, 23_46_07 (5).png",
+    "animation": "dash",
+    "frame": 5
+  },
+  {
+    "type": "character_frame",
+    "file": "assets/characters/stick_runner/frames/dash/dash_06.png",
+    "source": "dash/ChatGPT Image 2 de mai. de 2026, 23_46_07 (6).png",
+    "animation": "dash",
+    "frame": 6
+  },
+  {
+    "type": "character_frame",
+    "file": "assets/characters/stick_runner/frames/hit/hit_01.png",
+    "source": "hit/ChatGPT Image 2 de mai. de 2026, 23_46_48 (1).png",
+    "animation": "hit",
+    "frame": 1
+  },
+  {
+    "type": "character_frame",
+    "file": "assets/characters/stick_runner/frames/hit/hit_02.png",
+    "source": "hit/ChatGPT Image 2 de mai. de 2026, 23_46_48 (2).png",
+    "animation": "hit",
+    "frame": 2
+  },
+  {
+    "type": "character_frame",
+    "file": "assets/characters/stick_runner/frames/hit/hit_03.png",
+    "source": "hit/ChatGPT Image 2 de mai. de 2026, 23_46_48 (3).png",
+    "animation": "hit",
+    "frame": 3
+  },
+  {
+    "type": "character_frame",
+    "file": "assets/characters/stick_runner/frames/hit/hit_04.png",
+    "source": "hit/ChatGPT Image 2 de mai. de 2026, 23_46_48 (4).png",
+    "animation": "hit",
+    "frame": 4
+  },
+  {
+    "type": "character_frame",
+    "file": "assets/characters/stick_runner/frames/hit/hit_05.png",
+    "source": "hit/ChatGPT Image 2 de mai. de 2026, 23_46_48 (5).png",
+    "animation": "hit",
+    "frame": 5
+  },
+  {
+    "type": "character_frame",
+    "file": "assets/characters/stick_runner/frames/hit/hit_06.png",
+    "source": "hit/ChatGPT Image 2 de mai. de 2026, 23_46_48 (6).png",
+    "animation": "hit",
+    "frame": 6
+  },
+  {
+    "type": "character_frame",
+    "file": "assets/characters/stick_runner/frames/hit/hit_07.png",
+    "source": "hit/ChatGPT Image 2 de mai. de 2026, 23_46_48 (7).png",
+    "animation": "hit",
+    "frame": 7
+  },
+  {
+    "type": "character_frame",
+    "file": "assets/characters/stick_runner/frames/hit/hit_08.png",
+    "source": "hit/ChatGPT Image 2 de mai. de 2026, 23_46_48 (8).png",
+    "animation": "hit",
+    "frame": 8
+  },
+  {
+    "type": "crystal",
+    "file": "assets/crystals/crystal_common.png",
+    "source": "Cristais/crystal_common.png"
+  },
+  {
+    "type": "crystal",
+    "file": "assets/crystals/crystal_glow.png",
+    "source": "Cristais/crystal_glow.png"
+  },
+  {
+    "type": "crystal",
+    "file": "assets/crystals/crystal_legendary.png",
+    "source": "Cristais/crystal_legendary.png"
+  },
+  {
+    "type": "crystal",
+    "file": "assets/crystals/crystal_rare.png",
+    "source": "Cristais/crystal_rare.png"
+  },
+  {
+    "type": "obstacle",
+    "file": "assets/obstacles/obs_bamboo_spike.png",
+    "source": "Cristais/obs_bamboo_spike.png"
+  },
+  {
+    "type": "obstacle",
+    "file": "assets/obstacles/obs_broken_blade.png",
+    "source": "Cristais/obs_broken_blade.png"
+  },
+  {
+    "type": "obstacle",
+    "file": "assets/obstacles/obs_cursed_shard.png",
+    "source": "Cristais/obs_cursed_shard.png"
+  },
+  {
+    "type": "obstacle",
+    "file": "assets/obstacles/obs_fragment_spike.png",
+    "source": "Cristais/obs_fragment_spike.png"
+  },
+  {
+    "type": "obstacle",
+    "file": "assets/obstacles/obs_spiritual_rock.png",
+    "source": "Cristais/obs_spiritual_rock.png"
+  },
+  {
+    "type": "vfx",
+    "file": "assets/vfx/vfx_aura_ring.png",
+    "source": "vfx/vfx_aura_ring.png"
+  },
+  {
+    "type": "vfx",
+    "file": "assets/vfx/vfx_combo_burst.png",
+    "source": "vfx/vfx_combo_burst.png"
+  },
+  {
+    "type": "vfx",
+    "file": "assets/vfx/vfx_dash_smear.png",
+    "source": "vfx/vfx_dash_smear.png"
+  },
+  {
+    "type": "vfx",
+    "file": "assets/vfx/vfx_impact_flash.png",
+    "source": "vfx/vfx_impact_flash.png"
+  },
+  {
+    "type": "vfx",
+    "file": "assets/vfx/vfx_orbit_dot.png",
+    "source": "vfx/vfx_orbit_dot.png"
+  },
+  {
+    "type": "vfx",
+    "file": "assets/vfx/vfx_pickup_burst.png",
+    "source": "vfx/vfx_pickup_burst.pn.png"
+  },
+  {
+    "type": "vfx",
+    "file": "assets/vfx/vfx_trail_streak.png",
+    "source": "vfx/vfx_trail_streak.png"
+  },
+  {
+    "type": "ui",
+    "file": "assets/ui/ui_button_main.png",
+    "source": "ui/ui_button_main.png"
+  },
+  {
+    "type": "ui",
+    "file": "assets/ui/ui_button_secondary.png",
+    "source": "ui/ui_button_secondary.png"
+  },
+  {
+    "type": "ui",
+    "file": "assets/ui/ui_card_frame.png",
+    "source": "ui/ui_card_frame.png"
+  },
+  {
+    "type": "ui",
+    "file": "assets/ui/ui_icon_combo.png",
+    "source": "ui/ui_icon_combo.png"
+  },
+  {
+    "type": "ui",
+    "file": "assets/ui/ui_icon_crystal.png",
+    "source": "ui/ui_icon_crystal.png"
+  },
+  {
+    "type": "ui",
+    "file": "assets/ui/ui_icon_dash.png",
+    "source": "ui/ui_icon_dash.png"
+  },
+  {
+    "type": "ui",
+    "file": "assets/ui/ui_icon_pause.png",
+    "source": "ui/ui_icon_pause.png"
+  },
+  {
+    "type": "ui",
+    "file": "assets/ui/ui_panel_hud.png",
+    "source": "ui/ui_panel_hud.png"
+  },
+  {
+    "type": "background",
+    "file": "assets/backgrounds/bamboo/fog.png",
+    "source": "fundo 1 bambuzal noturno/bg_bamboo_fog.png",
+    "environment": "bamboo"
+  },
+  {
+    "type": "background",
+    "file": "assets/backgrounds/bamboo/front.png",
+    "source": "fundo 1 bambuzal noturno/bg_bamboo_front.png",
+    "environment": "bamboo"
+  },
+  {
+    "type": "background",
+    "file": "assets/backgrounds/bamboo/mid.png",
+    "source": "fundo 1 bambuzal noturno/bg_bamboo_mid.png",
+    "environment": "bamboo"
+  },
+  {
+    "type": "background",
+    "file": "assets/backgrounds/bamboo/mountains.png",
+    "source": "fundo 1 bambuzal noturno/bg_bamboo_mountains.png",
+    "environment": "bamboo"
+  },
+  {
+    "type": "background",
+    "file": "assets/backgrounds/bamboo/sky.png",
+    "source": "fundo 1 bambuzal noturno/bg_bamboo_sky.png",
+    "environment": "bamboo"
+  },
+  {
+    "type": "background",
+    "file": "assets/backgrounds/bridge/fog.png",
+    "source": "fundo 2 ponte nevoa/bg_bridge_fog.png",
+    "environment": "bridge"
+  },
+  {
+    "type": "background",
+    "file": "assets/backgrounds/bridge/front.png",
+    "source": "fundo 2 ponte nevoa/bg_bridge_front.png",
+    "environment": "bridge"
+  },
+  {
+    "type": "background",
+    "file": "assets/backgrounds/bridge/mid.png",
+    "source": "fundo 2 ponte nevoa/bg_bridge_mid.png",
+    "environment": "bridge"
+  },
+  {
+    "type": "background",
+    "file": "assets/backgrounds/bridge/mountains.png",
+    "source": "fundo 2 ponte nevoa/bg_bridge_mountains.png",
+    "environment": "bridge"
+  },
+  {
+    "type": "background",
+    "file": "assets/backgrounds/bridge/sky.png",
+    "source": "fundo 2 ponte nevoa/bg_bridge_sky.png",
+    "environment": "bridge"
+  },
+  {
+    "type": "background",
+    "file": "assets/backgrounds/jade/fog.png",
+    "source": "fundo 3 vale de jade/bg_jade_fog.png",
+    "environment": "jade"
+  },
+  {
+    "type": "background",
+    "file": "assets/backgrounds/jade/front.png",
+    "source": "fundo 3 vale de jade/bg_jade_front.png",
+    "environment": "jade"
+  },
+  {
+    "type": "background",
+    "file": "assets/backgrounds/jade/mid.png",
+    "source": "fundo 3 vale de jade/bg_jade_mid.png",
+    "environment": "jade"
+  },
+  {
+    "type": "background",
+    "file": "assets/backgrounds/jade/mountains.png",
+    "source": "fundo 3 vale de jade/bg_jade_mountains.png",
+    "environment": "jade"
+  },
+  {
+    "type": "background",
+    "file": "assets/backgrounds/jade/sky.png",
+    "source": "fundo 3 vale de jade/bg_jade_sky.png",
+    "environment": "jade"
+  }
+]

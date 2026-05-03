@@ -9,6 +9,18 @@ const PLAYER_Y: float = 960.0
 const VIEW_W: float = 720.0
 const VIEW_H: float = 1280.0
 
+var game_bg_sky_png: Texture2D = null
+var game_bg_mountains_png: Texture2D = null
+var game_bg_mid_png: Texture2D = null
+var game_bg_front_png: Texture2D = null
+var game_bg_fog_png: Texture2D = null
+var game_bg_key: String = ""
+
+var player_run_frames_png: Array[Texture2D] = []
+var player_dash_frames_png: Array[Texture2D] = []
+var player_hit_frames_png: Array[Texture2D] = []
+var player_png_loaded: bool = false
+
 # Wuxia Color Palette
 const C_BG_DEEP: Color    = Color(0.010, 0.036, 0.016, 1.0)
 const C_BG_MID: Color     = Color(0.018, 0.060, 0.028, 1.0)
@@ -1929,6 +1941,7 @@ func hide_legacy_meta_layers() -> void:
 # ── Draw ──────────────────────────────────────────────────────────────────────
 func _draw() -> void:
 	_draw_wuxia_background()
+	_draw_png_game_background()
 	if screen in ["game", "countdown", "pause"]:
 		_draw_game_bamboo()
 		_draw_game_mist()
@@ -1949,6 +1962,76 @@ func _draw() -> void:
 		_draw_neo_shell()
 	if screen == "result":
 		_draw_result_badges()
+
+func _load_game_bg_texture_direct(path: String) -> Texture2D:
+	var tex: Texture2D = load(path) as Texture2D
+
+	if tex == null:
+		push_warning("Gameplay background PNG nao carregou: " + path)
+
+	return tex
+
+func _current_game_bg_key() -> String:
+	if current_biome_index >= 4:
+		return "jade"
+	if current_biome_index >= 2:
+		return "bridge"
+	return "bamboo"
+
+func _ensure_game_bg_loaded() -> void:
+	var key: String = _current_game_bg_key()
+
+	if key == game_bg_key:
+		return
+
+	game_bg_key = key
+
+	var base_path: String = "res://assets/backgrounds/%s/" % key
+
+	game_bg_sky_png = _load_game_bg_texture_direct(base_path + "sky.png")
+	game_bg_mountains_png = _load_game_bg_texture_direct(base_path + "mountains.png")
+	game_bg_mid_png = _load_game_bg_texture_direct(base_path + "mid.png")
+	game_bg_front_png = _load_game_bg_texture_direct(base_path + "front.png")
+	game_bg_fog_png = _load_game_bg_texture_direct(base_path + "fog.png")
+
+func _draw_game_bg_layer_png(tex: Texture2D, speed_factor: float, alpha: float) -> void:
+	if tex == null:
+		return
+
+	var tw: float = float(tex.get_width())
+	var th: float = float(tex.get_height())
+
+	if tw <= 0.0 or th <= 0.0:
+		return
+
+	var scale_factor: float = maxf(VIEW_W / tw, VIEW_H / th)
+	var draw_size: Vector2 = Vector2(tw, th) * scale_factor
+	var base_x: float = (VIEW_W - draw_size.x) * 0.5
+
+	var scroll_y: float = fmod(scrolled_distance * speed_factor, draw_size.y)
+	var y: float = -scroll_y
+
+	while y < VIEW_H:
+		draw_texture_rect(
+			tex,
+			Rect2(base_x, y, draw_size.x, draw_size.y),
+			false,
+			Color(1, 1, 1, alpha)
+		)
+		y += draw_size.y
+
+func _draw_png_game_background() -> void:
+	if screen not in ["game", "countdown", "pause"]:
+		return
+
+	_ensure_game_bg_loaded()
+
+	_draw_game_bg_layer_png(game_bg_sky_png, 0.006, 1.0)
+	_draw_game_bg_layer_png(game_bg_mountains_png, 0.012, 1.0)
+	_draw_game_bg_layer_png(game_bg_mid_png, 0.030, 1.0)
+	_draw_game_bg_layer_png(game_bg_fog_png, 0.018, 0.48)
+	_draw_game_bg_layer_png(game_bg_front_png, 0.055, 1.0)
+
 
 func _draw_wuxia_background() -> void:
 	var biome: Dictionary = get_current_biome()
@@ -2222,11 +2305,88 @@ func _draw_shockwaves() -> void:
 		var c: Color = sw["color"]
 		draw_arc(sw["pos"], radius, 0.0, TAU, 64, Color(c.r, c.g, c.b, alpha), 2.2)
 
+
+func _load_player_png_direct(path: String) -> Texture2D:
+	var tex: Texture2D = load(path) as Texture2D
+
+	if tex == null:
+		push_warning("Player PNG nao carregou: " + path)
+
+	return tex
+
+func _load_player_png_frames(folder: String, prefix: String, count: int, target: Array[Texture2D]) -> void:
+	target.clear()
+
+	for i: int in range(1, count + 1):
+		var frame_path: String = "%s/%s_%02d.png" % [folder, prefix, i]
+		var tex: Texture2D = _load_player_png_direct(frame_path)
+
+		if tex != null:
+			target.append(tex)
+
+func _ensure_player_png_loaded() -> void:
+	if player_png_loaded:
+		return
+
+	player_png_loaded = true
+
+	_load_player_png_frames("res://assets/characters/stick_runner/frames/run", "run", 8, player_run_frames_png)
+	_load_player_png_frames("res://assets/characters/stick_runner/frames/dash", "dash", 6, player_dash_frames_png)
+	_load_player_png_frames("res://assets/characters/stick_runner/frames/hit", "hit", 8, player_hit_frames_png)
+
+func _draw_player_png_frame(tex: Texture2D, pos: Vector2, target_h: float) -> void:
+	if tex == null:
+		return
+
+	var aspect: float = float(tex.get_width()) / maxf(float(tex.get_height()), 1.0)
+	var size_px: Vector2 = Vector2(target_h * aspect, target_h)
+
+	draw_set_transform(pos, 0.0, Vector2.ONE)
+	draw_texture_rect(
+		tex,
+		Rect2(-size_px.x * 0.5, -size_px.y * 0.5, size_px.x, size_px.y),
+		false,
+		Color(1, 1, 1, 1)
+	)
+	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+
+func _try_draw_player_png() -> bool:
+	_ensure_player_png_loaded()
+
+	var frames: Array[Texture2D] = player_run_frames_png
+	var fps: float = 14.0
+	var target_h: float = 150.0
+
+	if player_state == "dash" and player_dash_frames_png.size() > 0:
+		frames = player_dash_frames_png
+		fps = 18.0
+		target_h = 168.0
+	elif player_state == "hit" and player_hit_frames_png.size() > 0:
+		frames = player_hit_frames_png
+		fps = 12.0
+		target_h = 154.0
+
+	if frames.size() <= 0:
+		return false
+
+	var idx: int = int(pulse_time * fps) % frames.size()
+	var tex: Texture2D = frames[idx]
+
+	# Ajuste fino de posição do sprite na corrida
+	var draw_pos: Vector2 = player.position + Vector2(0, -38)
+
+	_draw_player_png_frame(tex, draw_pos, target_h)
+
+	return true
+
+
 func _draw_player() -> void:
+	if _try_draw_player_png():
+		return
+
 	if screen not in ["game", "countdown", "pause"]:
 		return
 	_draw_stickman_at(player.position, selected_skin, player_lean, player_run_phase, player_state, player_hit_flash, Color(1, 1, 1, 1))
-
 func _draw_stickman_at(pos: Vector2, skin_id: String, lean: float, phase: float, state: String, hit_flash: float, tint: Color) -> void:
 	var c: Color   = skin_color(skin_id)
 	var gc: Color  = skin_glow_color(skin_id)
