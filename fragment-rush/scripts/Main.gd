@@ -43,6 +43,12 @@ var vfx_aura_png: Texture2D = null
 var vfx_png_loaded: bool = false
 var vfx_png_sprites: Array[Dictionary] = []
 
+var hud_icon_crystal_png: Texture2D = null
+var hud_icon_dash_png: Texture2D = null
+var hud_icon_combo_png: Texture2D = null
+var hud_icon_pause_png: Texture2D = null
+var hud_png_loaded: bool = false
+
 # Wuxia Color Palette
 const C_BG_DEEP: Color    = Color(0.010, 0.036, 0.016, 1.0)
 const C_BG_MID: Color     = Color(0.018, 0.060, 0.028, 1.0)
@@ -1988,6 +1994,7 @@ func _draw() -> void:
 	_draw_player_aura()
 	_draw_resonance_circles()
 	_draw_dash_meter()
+	_draw_hud_png_overlays()
 	_draw_form_unlock_overlay()
 	_draw_flash_overlay()
 	if screen in ["menu", "shop", "cultivation"]:
@@ -2551,6 +2558,61 @@ func _draw_vfx_png_center(tex: Texture2D, center: Vector2, size_px: Vector2, tin
 		tint
 	)
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+
+
+func _load_hud_png_direct(path: String) -> Texture2D:
+	var tex: Texture2D = load(path) as Texture2D
+
+	if tex == null:
+		push_warning("HUD PNG nao carregou: " + path)
+
+	return tex
+
+func _ensure_hud_png_loaded() -> void:
+	if hud_png_loaded:
+		return
+
+	hud_png_loaded = true
+
+	hud_icon_crystal_png = _load_hud_png_direct("res://assets/ui/ui_icon_crystal.png")
+	hud_icon_dash_png = _load_hud_png_direct("res://assets/ui/ui_icon_dash.png")
+	hud_icon_combo_png = _load_hud_png_direct("res://assets/ui/ui_icon_combo.png")
+	hud_icon_pause_png = _load_hud_png_direct("res://assets/ui/ui_icon_pause.png")
+
+func _draw_hud_png_center(tex: Texture2D, center: Vector2, size_px: float, tint: Color) -> void:
+	draw_circle(center, size_px * 0.58, Color(0.003, 0.025, 0.014, 0.74))
+	draw_circle(center, size_px * 0.50, Color(tint.r, tint.g, tint.b, 0.16))
+	draw_arc(center, size_px * 0.52, pulse_time * 0.7, pulse_time * 0.7 + PI * 1.28, 48, Color(tint.r, tint.g, tint.b, 0.42), 2.0, true)
+
+	if tex == null:
+		draw_circle(center, size_px * 0.18, Color(tint.r, tint.g, tint.b, 0.92))
+		return
+
+	draw_set_transform(center, 0.0, Vector2.ONE)
+	draw_texture_rect(
+		tex,
+		Rect2(-size_px * 0.5, -size_px * 0.5, size_px, size_px),
+		false,
+		Color(1, 1, 1, 0.96)
+	)
+	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+
+func _draw_hud_png_overlays() -> void:
+	if screen not in ["game", "countdown", "pause"]:
+		return
+
+	_ensure_hud_png_loaded()
+
+	# Esquerda: cristal / pontuação
+	_draw_hud_png_center(hud_icon_crystal_png, Vector2(34, 34), 42.0, C_ENERGY)
+
+	# Direita: combo e dash
+	_draw_hud_png_center(hud_icon_combo_png, Vector2(VIEW_W - 168.0, 34.0), 40.0, C_GOLD)
+	_draw_hud_png_center(hud_icon_dash_png, Vector2(VIEW_W - 168.0, 76.0), 40.0, C_JADE)
+
+	# Pause no canto superior direito
+	_draw_hud_png_center(hud_icon_pause_png, Vector2(VIEW_W - 36.0, 34.0), 38.0, C_PEARL)
+
 
 func _draw_vfx_png_overlays() -> void:
 	if screen not in ["game", "countdown", "pause"]:
