@@ -48,6 +48,7 @@ var hud_icon_dash_png: Texture2D = null
 var hud_icon_combo_png: Texture2D = null
 var hud_icon_pause_png: Texture2D = null
 var hud_png_loaded: bool = false
+var hud_panel_png: Texture2D = null
 
 # Wuxia Color Palette
 const C_BG_DEEP: Color    = Color(0.010, 0.036, 0.016, 1.0)
@@ -2578,6 +2579,22 @@ func _ensure_hud_png_loaded() -> void:
 	hud_icon_dash_png = _load_hud_png_direct("res://assets/ui/ui_icon_dash.png")
 	hud_icon_combo_png = _load_hud_png_direct("res://assets/ui/ui_icon_combo.png")
 	hud_icon_pause_png = _load_hud_png_direct("res://assets/ui/ui_icon_pause.png")
+	hud_panel_png = _load_hud_png_direct("res://assets/ui/ui_panel_hud.png")
+
+
+func _draw_hud_panel_png_rect(rect: Rect2, tint: Color = Color(1, 1, 1, 1)) -> void:
+	if hud_panel_png == null:
+		var flat_color := Color(0.002, 0.030, 0.020, 0.72)
+		draw_rect(rect, flat_color)
+		draw_arc(rect.position + Vector2(rect.size.x * 0.5, rect.size.y * 0.5), minf(rect.size.x, rect.size.y) * 0.42, 0.0, TAU, 48, Color(0.14, 1.0, 0.65, 0.28), 1.4, true)
+		return
+
+	draw_texture_rect(
+		hud_panel_png,
+		rect,
+		false,
+		tint
+	)
 
 func _draw_hud_png_center(tex: Texture2D, center: Vector2, size_px: float, tint: Color) -> void:
 	draw_circle(center, size_px * 0.58, Color(0.003, 0.025, 0.014, 0.74))
@@ -2602,6 +2619,11 @@ func _draw_hud_png_overlays() -> void:
 		return
 
 	_ensure_hud_png_loaded()
+
+	# Painéis premium por trás dos cards do HUD
+	_draw_hud_panel_png_rect(Rect2(8, 8, 134, 76), Color(1, 1, 1, 0.74))
+	_draw_hud_panel_png_rect(Rect2(156, 8, 214, 76), Color(1, 1, 1, 0.66))
+	_draw_hud_panel_png_rect(Rect2(VIEW_W - 188.0, 8, 142, 116), Color(1, 1, 1, 0.70))
 
 	# Esquerda: cristal / pontuação
 	_draw_hud_png_center(hud_icon_crystal_png, Vector2(34, 34), 42.0, C_ENERGY)
