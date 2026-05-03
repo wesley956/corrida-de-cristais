@@ -21,6 +21,19 @@ var player_dash_frames_png: Array[Texture2D] = []
 var player_hit_frames_png: Array[Texture2D] = []
 var player_png_loaded: bool = false
 
+var crystal_common_png: Texture2D = null
+var crystal_rare_png: Texture2D = null
+var crystal_legendary_png: Texture2D = null
+var crystal_glow_png: Texture2D = null
+
+var obstacle_bamboo_png: Texture2D = null
+var obstacle_blade_png: Texture2D = null
+var obstacle_cursed_png: Texture2D = null
+var obstacle_fragment_png: Texture2D = null
+var obstacle_rock_png: Texture2D = null
+
+var entity_png_loaded: bool = false
+
 # Wuxia Color Palette
 const C_BG_DEEP: Color    = Color(0.010, 0.036, 0.016, 1.0)
 const C_BG_MID: Color     = Color(0.018, 0.060, 0.028, 1.0)
@@ -1949,6 +1962,7 @@ func _draw() -> void:
 	_draw_spiritual_lanes()
 	_draw_afterimages()
 	_draw_entities()
+	_draw_entity_png_overlays()
 	_draw_skin_trails()
 	_draw_particles()
 	_draw_shockwaves()
@@ -1962,7 +1976,6 @@ func _draw() -> void:
 		_draw_neo_shell()
 	if screen == "result":
 		_draw_result_badges()
-
 func _load_game_bg_texture_direct(path: String) -> Texture2D:
 	var tex: Texture2D = load(path) as Texture2D
 
@@ -2349,6 +2362,131 @@ func _draw_player_png_frame(tex: Texture2D, pos: Vector2, target_h: float) -> vo
 		Color(1, 1, 1, 1)
 	)
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+
+
+func _load_entity_png_direct(path: String) -> Texture2D:
+	var tex: Texture2D = load(path) as Texture2D
+
+	if tex == null:
+		push_warning("Entity PNG nao carregou: " + path)
+
+	return tex
+
+func _ensure_entity_png_loaded() -> void:
+	if entity_png_loaded:
+		return
+
+	entity_png_loaded = true
+
+	crystal_common_png = _load_entity_png_direct("res://assets/crystals/crystal_common.png")
+	crystal_rare_png = _load_entity_png_direct("res://assets/crystals/crystal_rare.png")
+	crystal_legendary_png = _load_entity_png_direct("res://assets/crystals/crystal_legendary.png")
+	crystal_glow_png = _load_entity_png_direct("res://assets/crystals/crystal_glow.png")
+
+	obstacle_bamboo_png = _load_entity_png_direct("res://assets/obstacles/obs_bamboo_spike.png")
+	obstacle_blade_png = _load_entity_png_direct("res://assets/obstacles/obs_broken_blade.png")
+	obstacle_cursed_png = _load_entity_png_direct("res://assets/obstacles/obs_cursed_shard.png")
+	obstacle_fragment_png = _load_entity_png_direct("res://assets/obstacles/obs_fragment_spike.png")
+	obstacle_rock_png = _load_entity_png_direct("res://assets/obstacles/obs_spiritual_rock.png")
+
+func _draw_entity_png_center(tex: Texture2D, center: Vector2, size_px: Vector2, tint: Color = Color(1, 1, 1, 1), rotation: float = 0.0) -> void:
+	if tex == null:
+		return
+
+	draw_set_transform(center, rotation, Vector2.ONE)
+	draw_texture_rect(
+		tex,
+		Rect2(-size_px.x * 0.5, -size_px.y * 0.5, size_px.x, size_px.y),
+		false,
+		tint
+	)
+	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+
+func _draw_crystal_png_overlay(pos: Vector2, crystal_type: String) -> void:
+	var tex: Texture2D = crystal_common_png
+	var glow_color: Color = Color(0.25, 1.0, 0.70, 1.0)
+	var size_px: float = 58.0
+
+	match crystal_type:
+		"rare":
+			tex = crystal_rare_png
+			size_px = 64.0
+			glow_color = Color(0.40, 1.0, 0.95, 1.0)
+		"epic":
+			tex = crystal_rare_png
+			size_px = 68.0
+			glow_color = Color(0.82, 0.55, 1.0, 1.0)
+		"legendary":
+			tex = crystal_legendary_png
+			size_px = 74.0
+			glow_color = Color(1.0, 0.82, 0.34, 1.0)
+		_:
+			tex = crystal_common_png
+
+	var pulse: float = 1.0 + sin(pulse_time * 3.6 + pos.x * 0.01) * 0.05
+
+	if crystal_glow_png != null:
+		_draw_entity_png_center(
+			crystal_glow_png,
+			pos,
+			Vector2(size_px * 1.9, size_px * 1.9) * pulse,
+			Color(glow_color.r, glow_color.g, glow_color.b, 0.55)
+		)
+	else:
+		draw_circle(pos, size_px * 0.62, Color(glow_color.r, glow_color.g, glow_color.b, 0.18))
+
+	_draw_entity_png_center(tex, pos, Vector2(size_px, size_px) * pulse)
+
+func _draw_obstacle_png_overlay(pos: Vector2, otype: String) -> void:
+	var tex: Texture2D = obstacle_bamboo_png
+	var size_px: Vector2 = Vector2(98.0, 112.0)
+	var danger: Color = Color(1.0, 0.18, 0.18, 1.0)
+	var rot: float = 0.0
+
+	match otype:
+		"bamboo_wall":
+			tex = obstacle_bamboo_png
+			size_px = Vector2(98.0, 118.0)
+		"stone_pillar":
+			tex = obstacle_rock_png
+			size_px = Vector2(100.0, 112.0)
+		"energy_barrier":
+			tex = obstacle_cursed_png
+			size_px = Vector2(112.0, 96.0)
+			danger = Color(0.90, 0.32, 1.0, 1.0)
+		"spirit_trap":
+			tex = obstacle_fragment_png
+			size_px = Vector2(108.0, 108.0)
+			danger = Color(0.90, 0.32, 1.0, 1.0)
+			rot = sin(pulse_time * 1.4) * 0.08
+		"spinning_blade":
+			tex = obstacle_blade_png
+			size_px = Vector2(112.0, 112.0)
+			rot = pulse_time * 1.8
+		_:
+			tex = obstacle_fragment_png
+
+	draw_circle(pos, maxf(size_px.x, size_px.y) * 0.46, Color(danger.r, danger.g, danger.b, 0.14))
+	_draw_entity_png_center(tex, pos, size_px, Color(1, 1, 1, 1), rot)
+
+func _draw_entity_png_overlays() -> void:
+	if screen not in ["game", "countdown", "pause"]:
+		return
+
+	_ensure_entity_png_loaded()
+
+	for item: Variant in entities:
+		if typeof(item) != TYPE_DICTIONARY:
+			continue
+
+		var e: Dictionary = item
+		var pos: Vector2 = Vector2(float(e.get("x", 0.0)), float(e.get("y", 0.0)))
+		var etype: String = str(e.get("type", ""))
+
+		if etype == "crystal":
+			_draw_crystal_png_overlay(pos, str(e.get("crystal_type", "common")))
+		elif etype == "obstacle":
+			_draw_obstacle_png_overlay(pos, str(e.get("otype", "bamboo_wall")))
 
 func _try_draw_player_png() -> bool:
 	_ensure_player_png_loaded()
