@@ -25,3 +25,6 @@ dash={"deadzone":0.5,"events":[Object(InputEventKey,"resource_local_to_scene":fa
 [rendering]
 renderer/rendering_method="mobile"
 textures/canvas_textures/default_texture_filter=1
+
+[autoload]
+SaveManager="*res://scripts/autoloads/SaveManager.gd"

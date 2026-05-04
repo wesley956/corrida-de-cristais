@@ -3,7 +3,6 @@ extends Node2D
 # Fragment Rush: Corrida dos Cristais
 # v2.0 - Wuxia Reborn: Stickman Marcial, Bambu, Jade e Fluxo Espiritual
 
-const SAVE_PATH: String = "user://fragment_rush_save_v2.json"
 const LANES: Array[float] = [-230.0, 0.0, 230.0]
 const PLAYER_Y: float = 960.0
 const VIEW_W: float = 720.0
@@ -1710,68 +1709,36 @@ func rarity_color_for(rarity: String) -> Color:
 # ── Save / load ───────────────────────────────────────────────────────────────
 func save_game() -> void:
 	var data: Dictionary = {
-		"best_distance": best_distance,
-		"total_crystals": total_crystals,
 		"selected_skin": selected_skin,
 		"owned_skins": owned_skins,
-		"last_daily_reward": last_daily_reward,
-		"tutorial_seen": tutorial_seen,
+		"total_crystals": total_crystals,
+		"best_distance": best_distance,
 		"cultivation_xp": cultivation_xp,
 		"technique_levels": technique_levels,
 		"mission_progress": mission_progress,
 		"mission_completed": mission_completed,
+		"last_daily_reward": last_daily_reward,
+		"tutorial_seen": tutorial_seen,
 		"games_played_total": games_played_total
 	}
-	var file: FileAccess = FileAccess.open(SAVE_PATH, FileAccess.WRITE)
-	if file != null:
-		file.store_string(JSON.stringify(data))
+
+	SaveManager.save_game(data)
 
 func load_save() -> void:
-	# Try new save first
-	var path: String = SAVE_PATH
-	if not FileAccess.file_exists(path):
-		# Try legacy save
-		path = "user://fragment_rush_save.json"
-		if not FileAccess.file_exists(path):
-			return
-	var file: FileAccess = FileAccess.open(path, FileAccess.READ)
-	if file == null:
-		return
-	var parsed: Variant = JSON.parse_string(file.get_as_text())
-	if typeof(parsed) != TYPE_DICTIONARY:
-		return
-	best_distance   = float(parsed.get("best_distance", 0.0))
-	total_crystals  = int(parsed.get("total_crystals", 0))
-	selected_skin   = str(parsed.get("selected_skin", "nucleo_errante"))
-	last_daily_reward = str(parsed.get("last_daily_reward", ""))
-	tutorial_seen   = bool(parsed.get("tutorial_seen", false))
-	cultivation_xp  = int(parsed.get("cultivation_xp", 0))
-	games_played_total = int(parsed.get("games_played_total", 0))
-	var lt: Variant = parsed.get("technique_levels", {"dash": 0, "jade": 0, "flow": 0})
-	if typeof(lt) == TYPE_DICTIONARY:
-		technique_levels = lt
-	for k in ["dash", "jade", "flow"]:
-		if not technique_levels.has(k):
-			technique_levels[k] = 0
-	var ls: Variant = parsed.get("owned_skins", {"nucleo_errante": true})
-	if typeof(ls) == TYPE_DICTIONARY:
-		owned_skins = ls
-	owned_skins["nucleo_errante"] = true
-	# Migrate old skin IDs
-	if owned_skins.has("orbe_celestial"):
-		owned_skins["corredor_rubi"] = owned_skins["orbe_celestial"]
-	if selected_skin == "orbe_celestial":
-		selected_skin = "corredor_rubi"
-	if not bool(owned_skins.get(selected_skin, false)):
-		selected_skin = "nucleo_errante"
-	var mp: Variant = parsed.get("mission_progress", {})
-	if typeof(mp) == TYPE_DICTIONARY:
-		mission_progress = mp
-	var mc: Variant = parsed.get("mission_completed", {})
-	if typeof(mc) == TYPE_DICTIONARY:
-		mission_completed = mc
+	var data: Dictionary = SaveManager.load_game()
 
-# ── Screen shake ──────────────────────────────────────────────────────────────
+	selected_skin = data["selected_skin"]
+	owned_skins = data["owned_skins"]
+	total_crystals = data["total_crystals"]
+	best_distance = data["best_distance"]
+	cultivation_xp = data["cultivation_xp"]
+	technique_levels = data["technique_levels"]
+	mission_progress = data["mission_progress"]
+	mission_completed = data["mission_completed"]
+	last_daily_reward = data["last_daily_reward"]
+	tutorial_seen = data["tutorial_seen"]
+	games_played_total = data["games_played_total"]
+
 func _update_screen_shake(delta: float) -> void:
 	camera_shake = maxf(0.0, camera_shake - delta * 22.0)
 	if camera_shake > 0.0:
