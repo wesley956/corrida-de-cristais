@@ -28,4 +28,5 @@ textures/canvas_textures/default_texture_filter=1
 
 [autoload]
 GameConfig="*res://scripts/autoloads/GameConfig.gd"
+EventBus="*res://scripts/autoloads/EventBus.gd"
 SaveManager="*res://scripts/autoloads/SaveManager.gd"
