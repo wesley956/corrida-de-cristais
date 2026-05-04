@@ -3,10 +3,6 @@ extends Node2D
 # Fragment Rush: Corrida dos Cristais
 # v2.0 - Wuxia Reborn: Stickman Marcial, Bambu, Jade e Fluxo Espiritual
 
-const LANES: Array[float] = [-230.0, 0.0, 230.0]
-const PLAYER_Y: float = 960.0
-const VIEW_W: float = 720.0
-const VIEW_H: float = 1280.0
 
 var game_bg_sky_png: Texture2D = null
 var game_bg_mountains_png: Texture2D = null
@@ -49,87 +45,7 @@ var hud_icon_pause_png: Texture2D = null
 var hud_png_loaded: bool = false
 var hud_panel_png: Texture2D = null
 
-# Wuxia Color Palette
-const C_BG_DEEP: Color    = Color(0.010, 0.036, 0.016, 1.0)
-const C_BG_MID: Color     = Color(0.018, 0.060, 0.028, 1.0)
-const C_JADE: Color       = Color(0.180, 0.840, 0.400, 1.0)
-const C_JADE_SOFT: Color  = Color(0.260, 0.920, 0.500, 1.0)
-const C_MIST: Color       = Color(0.160, 0.520, 0.340, 1.0)
-const C_BAMBOO: Color     = Color(0.060, 0.220, 0.090, 1.0)
-const C_GOLD: Color       = Color(1.000, 0.851, 0.502, 1.0)
-const C_LANTERN: Color    = Color(0.950, 0.290, 0.090, 1.0)
-const C_PEARL: Color      = Color(0.880, 0.980, 0.900, 1.0)
-const C_ENERGY: Color     = Color(0.300, 0.900, 0.580, 1.0)
-const C_VIOLET: Color     = Color(0.541, 0.361, 1.000, 1.0)
-const C_RUBY: Color       = Color(0.950, 0.250, 0.180, 1.0)
-const C_SHADOW: Color     = Color(0.060, 0.020, 0.120, 1.0)
-const C_PANEL: Color      = Color(0.020, 0.075, 0.032, 0.78)
-
-# ── Skins ─────────────────────────────────────────────────────────────────────
-const SKINS: Dictionary = {
-	"nucleo_errante":      {"name": "Corredor Inicial",     "price": 0,     "desc": "O iniciante do caminho marcial."},
-	"semente_jade":        {"name": "Corredor de Jade",     "price": 1000,  "desc": "Flui com a energia da jade pura."},
-	"corredor_rubi":       {"name": "Corredor Rubi",        "price": 2200,  "desc": "Chamas marciais do coração ardente."},
-	"coracao_nebular":     {"name": "Corredor Nebular",     "price": 3800,  "desc": "Mistério estelar condensado em forma."},
-	"essencia_dourada":    {"name": "Corredor Dourado",     "price": 6000,  "desc": "Ascensão dourada do espírito marcial."},
-	"corredor_sombrio":    {"name": "Corredor Sombrio",     "price": 9000,  "desc": "As sombras do bambu na lua cheia."},
-	"corredor_celestial":  {"name": "Corredor Celestial",   "price": 13000, "desc": "Toca os véus do paraíso espiritual."},
-	"corredor_fragmentado":{"name": "Corredor Fragmentado", "price": 18000, "desc": "Além do tempo e do espaço marcial."}
-}
-
-# ── Técnicas ──────────────────────────────────────────────────────────────────
-const TECHNIQUES: Dictionary = {
-	"dash": {"name": "Passo Relâmpago", "max": 5, "base_price": 650,  "desc": "Reduz a recarga do dash."},
-	"jade": {"name": "Toque de Jade",   "max": 5, "base_price": 800,  "desc": "Aumenta a duração do ímã."},
-	"flow": {"name": "Estado de Fluxo", "max": 5, "base_price": 1000, "desc": "Aumenta a duração do fluxo espiritual."}
-}
-
-# ── Estágios de Cultivo ───────────────────────────────────────────────────────
-const CULTIVATION_STAGES: Array[String] = [
-	"Aprendiz Marcial",
-	"Praticante de Qi",
-	"Guerreiro de Jade",
-	"Mestre do Fluxo",
-	"Ascendido Espiritual"
-]
-
-# ── Círculos de Ressonância ────────────────────────────────────────────────────
-const RESONANCE_CIRCLES: Array = [
-	{"name": "Círculo do Bambu",    "xp": 500,   "color": Color(0.180, 0.840, 0.400, 1.0), "effect": "+Ressonância ao coletar cristais"},
-	{"name": "Círculo da Jade",     "xp": 1400,  "color": Color(0.260, 0.920, 0.500, 1.0), "effect": "+Alcance do Toque de Jade"},
-	{"name": "Círculo Nebular",     "xp": 3000,  "color": Color(0.541, 0.361, 1.000, 1.0), "effect": "+Bônus em Fluxo Perfeito"},
-	{"name": "Círculo Dourado",     "xp": 6000,  "color": Color(1.000, 0.851, 0.502, 1.0), "effect": "+Valor dos Cristais Raros"},
-	{"name": "Círculo Celestial",   "xp": 10000, "color": Color(0.880, 0.980, 0.900, 1.0), "effect": "+Duração do Estado de Fluxo"}
-]
-
-# ── Biomas Wuxia ──────────────────────────────────────────────────────────────
-const BIOMES: Array = [
-	{"name": "Floresta de Bambu Noturna", "at": 0.0,    "deep": Color(0.010, 0.036, 0.016, 1.0), "mist": Color(0.018, 0.065, 0.030, 1.0), "accent": Color(0.180, 0.840, 0.400, 1.0), "secondary": Color(0.260, 0.920, 0.500, 1.0)},
-	{"name": "Ponte Suspensa na Névoa",   "at": 600.0,  "deep": Color(0.014, 0.042, 0.040, 1.0), "mist": Color(0.025, 0.085, 0.075, 1.0), "accent": Color(0.200, 0.860, 0.600, 1.0), "secondary": Color(0.300, 0.900, 0.700, 1.0)},
-	{"name": "Vale Espiritual de Jade",   "at": 1300.0, "deep": Color(0.010, 0.055, 0.025, 1.0), "mist": Color(0.020, 0.100, 0.048, 1.0), "accent": Color(0.200, 0.950, 0.450, 1.0), "secondary": Color(0.320, 0.980, 0.560, 1.0)},
-	{"name": "Ruínas do Pavilhão Antigo", "at": 2200.0, "deep": Color(0.035, 0.038, 0.015, 1.0), "mist": Color(0.075, 0.070, 0.025, 1.0), "accent": Color(0.880, 0.780, 0.300, 1.0), "secondary": Color(0.950, 0.290, 0.090, 1.0)},
-	{"name": "Penhascos com Lanternas",   "at": 3300.0, "deep": Color(0.012, 0.020, 0.040, 1.0), "mist": Color(0.025, 0.040, 0.090, 1.0), "accent": Color(0.950, 0.290, 0.090, 1.0), "secondary": Color(1.000, 0.851, 0.502, 1.0)},
-	{"name": "Templo Esquecido",          "at": 4500.0, "deep": Color(0.030, 0.010, 0.048, 1.0), "mist": Color(0.060, 0.020, 0.095, 1.0), "accent": Color(0.880, 0.980, 0.900, 1.0), "secondary": Color(0.541, 0.361, 1.000, 1.0)}
-]
-
-# ── Missões ───────────────────────────────────────────────────────────────────
-const MISSIONS: Array = [
-	{"id": "collect_50",   "text": "Coletar 50 cristais",       "goal": 50,  "reward": 80},
-	{"id": "survive_60",   "text": "Sobreviver 60 segundos",     "goal": 60,  "reward": 120},
-	{"id": "combo_10",     "text": "Fazer combo x10",            "goal": 10,  "reward": 100},
-	{"id": "use_dash_5",   "text": "Usar dash 5 vezes",          "goal": 5,   "reward": 60},
-	{"id": "rare_3",       "text": "Coletar 3 cristais raros",   "goal": 3,   "reward": 150},
-	{"id": "play_3",       "text": "Jogar 3 partidas",           "goal": 3,   "reward": 70},
-	{"id": "beat_record",  "text": "Bater o recorde",            "goal": 1,   "reward": 200}
-]
-
-# ── Crystal rarities ──────────────────────────────────────────────────────────
-const CRYSTAL_TYPES: Array = [
-	{"id": "common",    "weight": 60, "value": 1,  "color": Color(0.220, 0.920, 0.560, 1.0), "glow": Color(0.160, 0.720, 0.440, 1.0), "size": 16.0, "label": "Cristal"},
-	{"id": "rare",      "weight": 26, "value": 3,  "color": Color(0.200, 0.840, 0.400, 1.0), "glow": Color(0.300, 0.980, 0.540, 1.0), "size": 20.0, "label": "Jade"},
-	{"id": "epic",      "weight": 11, "value": 8,  "color": Color(0.541, 0.361, 1.000, 1.0), "glow": Color(0.700, 0.500, 1.000, 1.0), "size": 24.0, "label": "Nebular"},
-	{"id": "legendary", "weight": 3,  "value": 20, "color": Color(1.000, 0.851, 0.502, 1.0), "glow": Color(1.000, 0.950, 0.650, 1.0), "size": 28.0, "label": "Lendário"}
-]
+# Configurações centrais movidas para GameConfig autoload.
 
 # ── State ─────────────────────────────────────────────────────────────────────
 var screen: String = "menu"
@@ -345,8 +261,8 @@ func _setup_environment_particles() -> void:
 	# Falling leaves
 	for _i in range(22):
 		falling_leaves.append({
-			"x": rng.randf() * VIEW_W,
-			"y": rng.randf() * VIEW_H,
+			"x": rng.randf() * GameConfig.VIEW_W,
+			"y": rng.randf() * GameConfig.VIEW_H,
 			"vx": rng.randf_range(-18.0, 18.0),
 			"vy": rng.randf_range(28.0, 65.0),
 			"rot": rng.randf() * TAU,
@@ -357,8 +273,8 @@ func _setup_environment_particles() -> void:
 	# Mist puffs
 	for _i in range(8):
 		mist_puffs.append({
-			"x": rng.randf() * VIEW_W,
-			"y": rng.randf() * VIEW_H,
+			"x": rng.randf() * GameConfig.VIEW_W,
+			"y": rng.randf() * GameConfig.VIEW_H,
 			"w": rng.randf_range(120.0, 280.0),
 			"h": rng.randf_range(30.0, 70.0),
 			"vx": rng.randf_range(-6.0, 6.0),
@@ -434,13 +350,13 @@ func _input(event: InputEvent) -> void:
 
 # ── Game nodes ────────────────────────────────────────────────────────────────
 func screen_lane_x(lane: int) -> float:
-	return VIEW_W * 0.5 + LANES[clampi(lane, 0, LANES.size() - 1)]
+	return GameConfig.VIEW_W * 0.5 + GameConfig.LANES[clampi(lane, 0, GameConfig.LANES.size() - 1)]
 
 func build_game_nodes() -> void:
 	target_x = screen_lane_x(player_lane)
 	player = Node2D.new()
 	player.name = "StickRunner"
-	player.position = Vector2(target_x, PLAYER_Y)
+	player.position = Vector2(target_x, GameConfig.PLAYER_Y)
 	add_child(player)
 
 # ── UI construction ───────────────────────────────────────────────────────────
@@ -476,28 +392,28 @@ func build_ui() -> void:
 	_build_transition()
 
 func _build_hud() -> void:
-	var left  = make_panel(Vector2(18, 20), Vector2(196, 84), C_PANEL, Color(C_JADE.r, C_JADE.g, C_JADE.b, 0.28))
-	var mid   = make_panel(Vector2(224, 20), Vector2(272, 84), C_PANEL, Color(C_PEARL.r, C_PEARL.g, C_PEARL.b, 0.22))
-	var right = make_panel(Vector2(506, 20), Vector2(196, 84), C_PANEL, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.28))
-	var rp    = make_panel(Vector2(80, 118), Vector2(560, 46), Color(0.015, 0.060, 0.025, 0.72), Color(C_JADE.r, C_JADE.g, C_JADE.b, 0.24))
+	var left  = make_panel(Vector2(18, 20), Vector2(196, 84), GameConfig.C_PANEL, Color(GameConfig.C_JADE.r, GameConfig.C_JADE.g, GameConfig.C_JADE.b, 0.28))
+	var mid   = make_panel(Vector2(224, 20), Vector2(272, 84), GameConfig.C_PANEL, Color(GameConfig.C_PEARL.r, GameConfig.C_PEARL.g, GameConfig.C_PEARL.b, 0.22))
+	var right = make_panel(Vector2(506, 20), Vector2(196, 84), GameConfig.C_PANEL, Color(GameConfig.C_GOLD.r, GameConfig.C_GOLD.g, GameConfig.C_GOLD.b, 0.28))
+	var rp    = make_panel(Vector2(80, 118), Vector2(560, 46), Color(0.015, 0.060, 0.025, 0.72), Color(GameConfig.C_JADE.r, GameConfig.C_JADE.g, GameConfig.C_JADE.b, 0.24))
 	for p in [left, mid, right, rp]:
 		hud_layer.add_child(p)
 
 	var lt = make_label("Cristais", 15, Vector2(12, 8), Color(0.70, 0.96, 0.78, 0.90))
-	crystal_label = make_label("0", 32, Vector2(12, 22), C_JADE_SOFT)
+	crystal_label = make_label("0", 32, Vector2(12, 22), GameConfig.C_JADE_SOFT)
 	score_label   = make_label("Pontos 0", 13, Vector2(12, 57), Color(0.80, 0.95, 0.85, 0.84))
 	left.add_child(lt); left.add_child(crystal_label); left.add_child(score_label)
 
 	var ct = make_label("Distância", 15, Vector2(0, 8), Color(0.78, 0.95, 0.84, 0.84))
 	ct.size = Vector2(272, 20); ct.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	distance_label = make_label("0 m", 30, Vector2(0, 22), C_PEARL)
+	distance_label = make_label("0 m", 30, Vector2(0, 22), GameConfig.C_PEARL)
 	distance_label.size = Vector2(272, 36); distance_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	hud_best_label = make_label("Marca 0 m", 13, Vector2(0, 58), Color(0.70, 0.92, 0.80, 0.80))
 	hud_best_label.size = Vector2(272, 20); hud_best_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	mid.add_child(ct); mid.add_child(distance_label); mid.add_child(hud_best_label)
 
 	var rt = make_label("Fluxo", 15, Vector2(12, 8), Color(0.76, 0.96, 0.82, 0.88))
-	combo_label = make_label("x1", 32, Vector2(12, 20), C_GOLD)
+	combo_label = make_label("x1", 32, Vector2(12, 20), GameConfig.C_GOLD)
 	dash_label  = make_label("Dash pronto", 13, Vector2(12, 57), Color(0.76, 0.96, 0.82, 0.84))
 	right.add_child(rt); right.add_child(combo_label); right.add_child(dash_label)
 
@@ -505,9 +421,9 @@ func _build_hud() -> void:
 	resonance_bar   = make_progress_bar(Vector2(14, 26), Vector2(532, 13))
 	rp.add_child(resonance_label); rp.add_child(resonance_bar)
 
-	status_label = make_label("", 27, Vector2(0, 220), C_GOLD)
+	status_label = make_label("", 27, Vector2(0, 220), GameConfig.C_GOLD)
 	status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	status_label.size = Vector2(VIEW_W, 68)
+	status_label.size = Vector2(GameConfig.VIEW_W, 68)
 	hud_layer.add_child(status_label)
 
 	pause_button = make_button("Ⅱ", Vector2(645, 178), Vector2(52, 50))
@@ -517,14 +433,14 @@ func _build_hud() -> void:
 
 	biome_label = make_label("", 15, Vector2(0, 206), Color(0.80, 0.96, 0.86, 0.88))
 	biome_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	biome_label.size = Vector2(VIEW_W, 30)
+	biome_label.size = Vector2(GameConfig.VIEW_W, 30)
 	hud_layer.add_child(biome_label)
 
 func _build_menu() -> void:
-	menu_card = make_panel(Vector2(44, 128), Vector2(632, 804), Color(0.012, 0.046, 0.020, 0.02), Color(C_JADE.r, C_JADE.g, C_JADE.b, 0.00))
+	menu_card = make_panel(Vector2(44, 128), Vector2(632, 804), Color(0.012, 0.046, 0.020, 0.02), Color(GameConfig.C_JADE.r, GameConfig.C_JADE.g, GameConfig.C_JADE.b, 0.00))
 	menu_layer.add_child(menu_card)
 
-	title_label = make_label("FRAGMENT RUSH\nCorrida dos Cristais", 40, Vector2(0, 16), C_PEARL)
+	title_label = make_label("FRAGMENT RUSH\nCorrida dos Cristais", 40, Vector2(0, 16), GameConfig.C_PEARL)
 	title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; title_label.size = Vector2(632, 120)
 	subtitle_label = make_label("Arte marcial cristalina em alta velocidade.", 18, Vector2(60, 142), Color(0.76, 0.96, 0.82, 0.92))
 	subtitle_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; subtitle_label.size = Vector2(512, 58)
@@ -546,11 +462,11 @@ func _build_menu() -> void:
 		menu_card.add_child(n)
 
 func _build_result() -> void:
-	result_card = make_panel(Vector2(44, 112), Vector2(632, 1040), Color(0.015, 0.055, 0.022, 0.74), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.30))
+	result_card = make_panel(Vector2(44, 112), Vector2(632, 1040), Color(0.015, 0.055, 0.022, 0.74), Color(GameConfig.C_GOLD.r, GameConfig.C_GOLD.g, GameConfig.C_GOLD.b, 0.30))
 	result_layer.add_child(result_card)
-	result_title          = make_label("CAMINHO INTERROMPIDO",  36, Vector2(0, 32),  C_PEARL)
+	result_title          = make_label("CAMINHO INTERROMPIDO",  36, Vector2(0, 32),  GameConfig.C_PEARL)
 	result_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; result_title.size = Vector2(632, 62)
-	result_summary_label  = make_label("",                      27, Vector2(36, 108), C_GOLD)
+	result_summary_label  = make_label("",                      27, Vector2(36, 108), GameConfig.C_GOLD)
 	result_summary_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; result_summary_label.size = Vector2(560, 86)
 	result_stats          = make_label("",                      14, Vector2(46, 222), Color(0.85, 0.97, 0.90, 1.0))
 	result_stats.size     = Vector2(540, 300)
@@ -568,13 +484,13 @@ func _build_result() -> void:
 	menu_button.pressed.connect(show_menu)
 
 func _build_shop_legacy() -> void:
-	shop_card = make_panel(Vector2(40, 60), Vector2(640, 1120), C_PANEL, Color(C_JADE.r, C_JADE.g, C_JADE.b, 0.24))
+	shop_card = make_panel(Vector2(40, 60), Vector2(640, 1120), GameConfig.C_PANEL, Color(GameConfig.C_JADE.r, GameConfig.C_JADE.g, GameConfig.C_JADE.b, 0.24))
 	shop_layer.add_child(shop_card)
-	shop_title_label       = make_label("PAVILHÃO MARCIAL",   30, Vector2(0, 20), C_PEARL)
+	shop_title_label       = make_label("PAVILHÃO MARCIAL",   30, Vector2(0, 20), GameConfig.C_PEARL)
 	shop_title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; shop_title_label.size = Vector2(640, 52)
 	shop_info_label        = make_label("",                    16, Vector2(20, 78),  Color(0.74, 0.94, 0.80, 0.90))
-	shop_preview_name_label= make_label("",                    24, Vector2(20, 112), C_PEARL)
-	shop_preview_meta_label= make_label("",                    16, Vector2(20, 146), C_JADE)
+	shop_preview_name_label= make_label("",                    24, Vector2(20, 112), GameConfig.C_PEARL)
+	shop_preview_meta_label= make_label("",                    16, Vector2(20, 146), GameConfig.C_JADE)
 	shop_preview_desc_label= make_label("",                    14, Vector2(20, 174), Color(0.76, 0.94, 0.82, 0.88))
 	shop_preview_desc_label.size = Vector2(600, 56)
 	shop_action_button     = make_button("",                   Vector2(100, 242), Vector2(440, 64))
@@ -593,11 +509,11 @@ func _build_shop_legacy() -> void:
 		shop_card.add_child(n)
 
 func _build_cultivation_legacy() -> void:
-	cultivation_card = make_panel(Vector2(40, 60), Vector2(640, 1060), C_PANEL, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.24))
+	cultivation_card = make_panel(Vector2(40, 60), Vector2(640, 1060), GameConfig.C_PANEL, Color(GameConfig.C_GOLD.r, GameConfig.C_GOLD.g, GameConfig.C_GOLD.b, 0.24))
 	cultivation_layer.add_child(cultivation_card)
-	var ct = make_label("CÂMARA DO NÚCLEO", 28, Vector2(0, 18), C_PEARL)
+	var ct = make_label("CÂMARA DO NÚCLEO", 28, Vector2(0, 18), GameConfig.C_PEARL)
 	ct.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; ct.size = Vector2(640, 52)
-	cultivation_stage_label       = make_label("", 20, Vector2(20, 78), C_JADE)
+	cultivation_stage_label       = make_label("", 20, Vector2(20, 78), GameConfig.C_JADE)
 	cultivation_stage_label.size  = Vector2(600, 70)
 	cultivation_next_circle_label = make_label("", 15, Vector2(20, 158), Color(0.76, 0.94, 0.82, 0.88))
 	cultivation_next_circle_label.size = Vector2(600, 80)
@@ -616,9 +532,9 @@ func _build_cultivation_legacy() -> void:
 	cultivation_card.add_child(cultivation_close_button)
 
 func _build_pause() -> void:
-	pause_card = make_panel(Vector2(80, 380), Vector2(560, 420), C_PANEL, Color(C_JADE.r, C_JADE.g, C_JADE.b, 0.28))
+	pause_card = make_panel(Vector2(80, 380), Vector2(560, 420), GameConfig.C_PANEL, Color(GameConfig.C_JADE.r, GameConfig.C_JADE.g, GameConfig.C_JADE.b, 0.28))
 	pause_layer.add_child(pause_card)
-	pause_title    = make_label("PAUSA", 38, Vector2(0, 28), C_PEARL)
+	pause_title    = make_label("PAUSA", 38, Vector2(0, 28), GameConfig.C_PEARL)
 	pause_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; pause_title.size = Vector2(560, 68)
 	pause_info_label = make_label("O caminho aguarda.", 18, Vector2(0, 106), Color(0.76, 0.96, 0.82, 0.86))
 	pause_info_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; pause_info_label.size = Vector2(560, 40)
@@ -631,9 +547,9 @@ func _build_pause() -> void:
 	pause_button = make_button("Ⅱ", Vector2(645, 178), Vector2(52, 50))
 
 func _build_tutorial() -> void:
-	tutorial_card = make_panel(Vector2(40, 100), Vector2(640, 1000), C_PANEL, Color(C_JADE.r, C_JADE.g, C_JADE.b, 0.28))
+	tutorial_card = make_panel(Vector2(40, 100), Vector2(640, 1000), GameConfig.C_PANEL, Color(GameConfig.C_JADE.r, GameConfig.C_JADE.g, GameConfig.C_JADE.b, 0.28))
 	tutorial_layer.add_child(tutorial_card)
-	tutorial_title = make_label("COMO JOGAR", 30, Vector2(0, 22), C_PEARL)
+	tutorial_title = make_label("COMO JOGAR", 30, Vector2(0, 22), GameConfig.C_PEARL)
 	tutorial_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; tutorial_title.size = Vector2(640, 60)
 	tutorial_text = make_label(
 		"O caminho marcial é simples, mas a maestria é rara.\n\n" +
@@ -661,12 +577,12 @@ func _build_tutorial() -> void:
 		tutorial_card.add_child(n)
 
 func _build_transition() -> void:
-	transition_card = make_panel(Vector2(0, 0), Vector2(VIEW_W, VIEW_H), Color(0.0, 0.0, 0.0, 0.0), Color(0.0, 0.0, 0.0, 0.0))
+	transition_card = make_panel(Vector2(0, 0), Vector2(GameConfig.VIEW_W, GameConfig.VIEW_H), Color(0.0, 0.0, 0.0, 0.0), Color(0.0, 0.0, 0.0, 0.0))
 	transition_layer.add_child(transition_card)
-	transition_label    = make_label("", 40, Vector2(0, 540), C_JADE)
-	transition_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; transition_label.size = Vector2(VIEW_W, 80)
+	transition_label    = make_label("", 40, Vector2(0, 540), GameConfig.C_JADE)
+	transition_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; transition_label.size = Vector2(GameConfig.VIEW_W, 80)
 	transition_subtitle = make_label("", 22, Vector2(0, 630), Color(0.76, 0.96, 0.82, 0.90))
-	transition_subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; transition_subtitle.size = Vector2(VIEW_W, 48)
+	transition_subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; transition_subtitle.size = Vector2(GameConfig.VIEW_W, 48)
 	for n in [transition_label, transition_subtitle]:
 		transition_card.add_child(n)
 
@@ -766,7 +682,7 @@ func _reset_run() -> void:
 	difficulty = 0.0
 	player_lane = 1
 	target_x = screen_lane_x(player_lane)
-	player.position = Vector2(target_x, PLAYER_Y)
+	player.position = Vector2(target_x, GameConfig.PLAYER_Y)
 	player_state = "running"
 	player_lean = 0.0
 	player_lean_target = 0.0
@@ -813,9 +729,9 @@ func game_over() -> void:
 	player_hit_flash = 0.8
 	camera_shake = maxf(camera_shake, 18.0)
 	flash_alpha = 0.35
-	spawn_shockwave(player.position, C_RUBY, 30.0, 220.0, 0.55)
+	spawn_shockwave(player.position, GameConfig.C_RUBY, 30.0, 220.0, 0.55)
 	for _i in range(24):
-		spawn_particle(player.position + Vector2(rng.randf_range(-60.0, 60.0), rng.randf_range(-60.0, 60.0)), Color(C_RUBY.r, C_RUBY.g, C_RUBY.b, 0.82), 7, 0.50)
+		spawn_particle(player.position + Vector2(rng.randf_range(-60.0, 60.0), rng.randf_range(-60.0, 60.0)), Color(GameConfig.C_RUBY.r, GameConfig.C_RUBY.g, GameConfig.C_RUBY.b, 0.82), 7, 0.50)
 	await get_tree().create_timer(0.9).timeout
 	if score > 0 or distance > best_distance:
 		games_played_total += 1
@@ -930,8 +846,8 @@ func _update_distance(delta: float) -> void:
 
 func _update_biome() -> void:
 	var next_idx: int = 0
-	for i in range(BIOMES.size()):
-		if distance >= float(BIOMES[i]["at"]):
+	for i in range(GameConfig.BIOMES.size()):
+		if distance >= float(GameConfig.BIOMES[i]["at"]):
 			next_idx = i
 	if next_idx != current_biome_index:
 		current_biome_index = next_idx
@@ -970,9 +886,9 @@ func _update_crystal_rain(delta: float) -> void:
 	elif crystal_rain_timer <= 0.0:
 		crystal_rain_active = 4.5
 		crystal_rain_timer = rng.randf_range(18.0, 28.0)
-		show_status("CHUVA DE JADE", C_GOLD)
+		show_status("CHUVA DE JADE", GameConfig.C_GOLD)
 		flash_alpha = maxf(flash_alpha, 0.12)
-		spawn_shockwave(player.position, C_GOLD, 48.0, 280.0, 0.72)
+		spawn_shockwave(player.position, GameConfig.C_GOLD, 48.0, 280.0, 0.72)
 
 func _update_entities(delta: float) -> void:
 	var to_remove: Array[int] = []
@@ -981,7 +897,7 @@ func _update_entities(delta: float) -> void:
 		e["y"] = float(e["y"]) + speed * delta
 		e["age"] = float(e.get("age", 0.0)) + delta
 		entities[i] = e
-		if float(e["y"]) > VIEW_H + 120.0:
+		if float(e["y"]) > GameConfig.VIEW_H + 120.0:
 			to_remove.append(i)
 			continue
 		# Magnet
@@ -1062,11 +978,11 @@ func _hit_obstacle() -> void:
 	player_hit_flash = 1.0
 	camera_shake = maxf(camera_shake, 14.0)
 	flash_alpha = maxf(flash_alpha, 0.28)
-	spawn_shockwave(player.position, C_RUBY, 22.0, 160.0, 0.42)
-	_spawn_vfx_png(player.position, "impact", C_RUBY, 190.0, 0.40, rng.randf() * TAU)
+	spawn_shockwave(player.position, GameConfig.C_RUBY, 22.0, 160.0, 0.42)
+	_spawn_vfx_png(player.position, "impact", GameConfig.C_RUBY, 190.0, 0.40, rng.randf() * TAU)
 	for _i in range(14):
-		spawn_particle(player.position + Vector2(rng.randf_range(-50.0, 50.0), rng.randf_range(-50.0, 50.0)), Color(C_RUBY.r, C_RUBY.g, C_RUBY.b, 0.76), 6, 0.38)
-	show_status("FRAGMENTADO", C_RUBY)
+		spawn_particle(player.position + Vector2(rng.randf_range(-50.0, 50.0), rng.randf_range(-50.0, 50.0)), Color(GameConfig.C_RUBY.r, GameConfig.C_RUBY.g, GameConfig.C_RUBY.b, 0.76), 6, 0.38)
+	show_status("FRAGMENTADO", GameConfig.C_RUBY)
 	await get_tree().create_timer(0.8).timeout
 	if invulnerable_timer > 0.5:
 		game_over()
@@ -1076,17 +992,17 @@ func _collect_powerup(e: Dictionary) -> void:
 	match ptype:
 		"magnet":
 			magnet_timer = 5.0 + float(tech_level("jade")) * 0.6
-			show_status("TOQUE DE JADE — ÍMÃS", C_JADE)
+			show_status("TOQUE DE JADE — ÍMÃS", GameConfig.C_JADE)
 		"shield":
 			invulnerable_timer = maxf(invulnerable_timer, 4.5)
-			show_status("ESCUDO ESPIRITUAL", C_PEARL)
+			show_status("ESCUDO ESPIRITUAL", GameConfig.C_PEARL)
 		"slowmo":
 			slowmo_timer = maxf(slowmo_timer, 3.0)
-			show_status("FLUXO LENTO", C_VIOLET)
+			show_status("FLUXO LENTO", GameConfig.C_VIOLET)
 		"dash_boost":
 			dash_cooldown = 0.0
-			show_status("PASSO CARREGADO", C_ENERGY)
-	spawn_shockwave(Vector2(float(e["x"]), float(e["y"])), C_GOLD, 20.0, 110.0, 0.40)
+			show_status("PASSO CARREGADO", GameConfig.C_ENERGY)
+	spawn_shockwave(Vector2(float(e["x"]), float(e["y"])), GameConfig.C_GOLD, 20.0, 110.0, 0.40)
 	flash_alpha = maxf(flash_alpha, 0.06)
 
 func _update_dash(delta: float) -> void:
@@ -1104,7 +1020,7 @@ func _update_powerups(delta: float) -> void:
 		flow_timer -= delta
 		if flow_timer <= 0.0:
 			resonance_value = 0.0
-			show_status("FLUXO EXPIRADO", C_JADE_SOFT)
+			show_status("FLUXO EXPIRADO", GameConfig.C_JADE_SOFT)
 
 func _update_resonance(_delta: float) -> void:
 	pass
@@ -1119,21 +1035,21 @@ func _update_env_particles(delta: float) -> void:
 		lf["x"] = float(lf["x"]) + float(lf["vx"]) * delta + sin(pulse_time * 0.9 + float(i)) * 2.0 * delta
 		lf["y"] = float(lf["y"]) + float(lf["vy"]) * delta
 		lf["rot"] = float(lf["rot"]) + float(lf["rot_spd"]) * delta
-		if float(lf["y"]) > VIEW_H + 20.0:
+		if float(lf["y"]) > GameConfig.VIEW_H + 20.0:
 			lf["y"] = -20.0
-			lf["x"] = rng.randf() * VIEW_W
+			lf["x"] = rng.randf() * GameConfig.VIEW_W
 		falling_leaves[i] = lf
 	for i in range(mist_puffs.size()):
 		var mp := mist_puffs[i]
 		mp["x"] = float(mp["x"]) + float(mp["vx"]) * delta
 		mp["y"] = float(mp["y"]) + float(mp["vy"]) * delta
 		if float(mp["y"]) < -80.0:
-			mp["y"] = VIEW_H + 40.0
-			mp["x"] = rng.randf() * VIEW_W
+			mp["y"] = GameConfig.VIEW_H + 40.0
+			mp["x"] = rng.randf() * GameConfig.VIEW_W
 		mist_puffs[i] = mp
 
 func move_lane(dir: int) -> void:
-	var new_lane: int = clampi(player_lane + dir, 0, LANES.size() - 1)
+	var new_lane: int = clampi(player_lane + dir, 0, GameConfig.LANES.size() - 1)
 	if new_lane == player_lane:
 		return
 	player_lane = new_lane
@@ -1166,12 +1082,12 @@ func activate_flow_state() -> void:
 	flash_alpha = maxf(flash_alpha, 0.20)
 	camera_shake = maxf(camera_shake, 8.0)
 	combo_pop_timer = 1.0
-	spawn_afterimage(player.position, C_GOLD, 0.55)
-	_spawn_vfx_png(player.position, "aura", C_GOLD, 240.0, 0.70, 0.0)
-	spawn_shockwave(player.position, C_GOLD, 48.0, 260.0, 0.72)
-	show_status("ESTADO DE FLUXO  •  CÍRCULOS %d/%d" % [unlocked_circle_count(), RESONANCE_CIRCLES.size()], C_GOLD)
+	spawn_afterimage(player.position, GameConfig.C_GOLD, 0.55)
+	_spawn_vfx_png(player.position, "aura", GameConfig.C_GOLD, 240.0, 0.70, 0.0)
+	spawn_shockwave(player.position, GameConfig.C_GOLD, 48.0, 260.0, 0.72)
+	show_status("ESTADO DE FLUXO  •  CÍRCULOS %d/%d" % [unlocked_circle_count(), GameConfig.RESONANCE_CIRCLES.size()], GameConfig.C_GOLD)
 	for _i in range(28):
-		spawn_particle(player.position + Vector2(rng.randf_range(-72.0, 72.0), rng.randf_range(-64.0, 64.0)), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.82), 7, 0.58)
+		spawn_particle(player.position + Vector2(rng.randf_range(-72.0, 72.0), rng.randf_range(-64.0, 64.0)), Color(GameConfig.C_GOLD.r, GameConfig.C_GOLD.g, GameConfig.C_GOLD.b, 0.82), 7, 0.58)
 
 # ── Spawners ──────────────────────────────────────────────────────────────────
 func _spawn_obstacle_pattern() -> void:
@@ -1226,7 +1142,7 @@ func _spawn_crystal_group() -> void:
 	var rare_boost: float = 1.0 + float(tech_level("jade")) * 0.08
 	if has_resonance_circle(4):
 		rare_boost += 0.15
-	var adjusted_types: Array = CRYSTAL_TYPES.duplicate(true)
+	var adjusted_types: Array = GameConfig.CRYSTAL_TYPES.duplicate(true)
 	for ct in adjusted_types:
 		if ct["id"] != "common":
 			ct["weight"] = int(float(ct["weight"]) * rare_boost)
@@ -1297,14 +1213,14 @@ func _weighted_choice_dict(options: Array, weight_key: String) -> Dictionary:
 	return options[0]
 
 func _get_crystal_type(id: String) -> Dictionary:
-	for ct in CRYSTAL_TYPES:
+	for ct in GameConfig.CRYSTAL_TYPES:
 		if ct["id"] == id:
 			return ct
-	return CRYSTAL_TYPES[0]
+	return GameConfig.CRYSTAL_TYPES[0]
 
 # ── Missions ──────────────────────────────────────────────────────────────────
 func _update_mission_progress(mission_id: String, value: int) -> void:
-	for m in MISSIONS:
+	for m in GameConfig.MISSIONS:
 		if str(m["id"]) == mission_id:
 			if bool(mission_completed.get(mission_id, false)):
 				return
@@ -1313,7 +1229,7 @@ func _update_mission_progress(mission_id: String, value: int) -> void:
 				mission_completed[mission_id] = true
 				run_mission_bonus += int(m["reward"])
 				completed_run_missions.append(str(m["text"]))
-				show_status("MISSÃO: %s  +%d" % [str(m["text"]).to_upper(), int(m["reward"])], C_GOLD)
+				show_status("MISSÃO: %s  +%d" % [str(m["text"]).to_upper(), int(m["reward"])], GameConfig.C_GOLD)
 
 func _check_missions_end() -> void:
 	_update_mission_progress("survive_60", int(run_time))
@@ -1326,7 +1242,7 @@ func _check_missions_end() -> void:
 # ── Cultivation ───────────────────────────────────────────────────────────────
 func unlocked_circle_count() -> int:
 	var cnt: int = 0
-	for c in RESONANCE_CIRCLES:
+	for c in GameConfig.RESONANCE_CIRCLES:
 		if cultivation_xp >= int(c["xp"]):
 			cnt += 1
 	return cnt
@@ -1335,13 +1251,13 @@ func has_resonance_circle(idx: int) -> bool:
 	return unlocked_circle_count() >= idx
 
 func circle_color(idx: int) -> Color:
-	return RESONANCE_CIRCLES[clampi(idx - 1, 0, RESONANCE_CIRCLES.size() - 1)]["color"]
+	return GameConfig.RESONANCE_CIRCLES[clampi(idx - 1, 0, GameConfig.RESONANCE_CIRCLES.size() - 1)]["color"]
 
 func next_circle_hint() -> String:
 	var cnt: int = unlocked_circle_count()
-	if cnt >= RESONANCE_CIRCLES.size():
+	if cnt >= GameConfig.RESONANCE_CIRCLES.size():
 		return "Todos os Círculos despertaram."
-	var nc: Dictionary = RESONANCE_CIRCLES[cnt]
+	var nc: Dictionary = GameConfig.RESONANCE_CIRCLES[cnt]
 	return "Próximo: %s  •  faltam %d XP" % [str(nc["name"]), max(0, int(nc["xp"]) - cultivation_xp)]
 
 func get_cultivation_stage_index() -> int:
@@ -1352,7 +1268,7 @@ func get_cultivation_stage_index() -> int:
 	return 0
 
 func get_cultivation_stage_name() -> String:
-	return CULTIVATION_STAGES[get_cultivation_stage_index()]
+	return GameConfig.CULTIVATION_STAGES[get_cultivation_stage_index()]
 
 func next_stage_xp() -> int:
 	match get_cultivation_stage_index():
@@ -1364,7 +1280,7 @@ func next_stage_xp() -> int:
 
 func get_stage_progress_percent() -> float:
 	var idx: int = get_cultivation_stage_index()
-	if idx >= CULTIVATION_STAGES.size() - 1:
+	if idx >= GameConfig.CULTIVATION_STAGES.size() - 1:
 		return 100.0
 	var thresholds: Array[int] = [0, 500, 1400, 3000, 6000]
 	var lo: int = thresholds[idx]
@@ -1375,27 +1291,27 @@ func tech_level(tech_id: String) -> int:
 	return int(technique_levels.get(tech_id, 0))
 
 func technique_price(tech_id: String) -> int:
-	return int(TECHNIQUES[tech_id]["base_price"]) + tech_level(tech_id) * 550
+	return int(GameConfig.TECHNIQUES[tech_id]["base_price"]) + tech_level(tech_id) * 550
 
 func upgrade_technique(tech_id: String) -> void:
-	if not TECHNIQUES.has(tech_id):
+	if not GameConfig.TECHNIQUES.has(tech_id):
 		return
 	var level: int = tech_level(tech_id)
-	if level >= int(TECHNIQUES[tech_id]["max"]):
-		show_status("TÉCNICA NO MÁXIMO", C_GOLD); return
+	if level >= int(GameConfig.TECHNIQUES[tech_id]["max"]):
+		show_status("TÉCNICA NO MÁXIMO", GameConfig.C_GOLD); return
 	var price: int = technique_price(tech_id)
 	if total_crystals < price:
-		show_status("CRISTAIS INSUFICIENTES", C_RUBY); flash_alpha = maxf(flash_alpha, 0.07); return
+		show_status("CRISTAIS INSUFICIENTES", GameConfig.C_RUBY); flash_alpha = maxf(flash_alpha, 0.07); return
 	total_crystals -= price
 	technique_levels[tech_id] = level + 1
 	save_game()
 	update_cultivation_ui()
-	show_status("TÉCNICA APRIMORADA", C_JADE)
+	show_status("TÉCNICA APRIMORADA", GameConfig.C_JADE)
 	update_neo_core()
 
 # ── Shop ──────────────────────────────────────────────────────────────────────
 func select_shop_skin(skin_id: String) -> void:
-	if not SKINS.has(skin_id):
+	if not GameConfig.SKINS.has(skin_id):
 		return
 	selected_shop_skin = skin_id
 	update_shop_ui()
@@ -1405,16 +1321,16 @@ func activate_selected_shop_skin() -> void:
 	buy_or_select_skin(selected_shop_skin)
 
 func buy_or_select_skin(skin_id: String) -> void:
-	if not SKINS.has(skin_id):
+	if not GameConfig.SKINS.has(skin_id):
 		return
 	var owned: bool = bool(owned_skins.get(skin_id, false))
 	if owned:
 		selected_skin = skin_id
 		save_game()
 		update_shop_ui()
-		show_status("FORMA SINTONIZADA", C_JADE)
+		show_status("FORMA SINTONIZADA", GameConfig.C_JADE)
 		return
-	var price: int = int(SKINS[skin_id]["price"])
+	var price: int = int(GameConfig.SKINS[skin_id]["price"])
 	if total_crystals >= price:
 		total_crystals -= price
 		owned_skins[skin_id] = true
@@ -1423,12 +1339,12 @@ func buy_or_select_skin(skin_id: String) -> void:
 		update_shop_ui()
 		_trigger_form_unlock(skin_id)
 	else:
-		show_status("CRISTAIS INSUFICIENTES", C_RUBY)
+		show_status("CRISTAIS INSUFICIENTES", GameConfig.C_RUBY)
 		flash_alpha = maxf(flash_alpha, 0.07)
 
 func _trigger_form_unlock(skin_id: String) -> void:
 	form_unlock_skin = skin_id
-	form_unlock_name = str(SKINS.get(skin_id, {}).get("name", "Nova Forma"))
+	form_unlock_name = str(GameConfig.SKINS.get(skin_id, {}).get("name", "Nova Forma"))
 	form_unlock_timer = 2.8
 	flash_alpha = maxf(flash_alpha, 0.20)
 	camera_shake = maxf(camera_shake, 11.0)
@@ -1440,28 +1356,28 @@ func shop_action_text(skin_id: String) -> String:
 		return "EQUIPADO"
 	if bool(owned_skins.get(skin_id, false)):
 		return "EQUIPAR"
-	var price: int = int(SKINS.get(skin_id, {}).get("price", 9999))
+	var price: int = int(GameConfig.SKINS.get(skin_id, {}).get("price", 9999))
 	if total_crystals >= price:
 		return "DESPERTAR  ·  %d" % price
 	return "FALTAM %d CRISTAIS" % max(0, price - total_crystals)
 
 func _cheapest_skin_price() -> int:
 	var cheapest: int = 999999
-	for sid in SKINS.keys():
+	for sid in GameConfig.SKINS.keys():
 		if not bool(owned_skins.get(sid, false)):
-			cheapest = mini(cheapest, int(SKINS[sid]["price"]))
+			cheapest = mini(cheapest, int(GameConfig.SKINS[sid]["price"]))
 	return cheapest if cheapest < 999999 else 1
 
 func get_next_unlock_hint() -> String:
 	var cheapest_name: String = ""
 	var cheapest_price: int = 999999
-	for sid in SKINS.keys():
+	for sid in GameConfig.SKINS.keys():
 		if bool(owned_skins.get(sid, false)):
 			continue
-		var price: int = int(SKINS[sid]["price"])
+		var price: int = int(GameConfig.SKINS[sid]["price"])
 		if price < cheapest_price:
 			cheapest_price = price
-			cheapest_name = str(SKINS[sid]["name"])
+			cheapest_name = str(GameConfig.SKINS[sid]["name"])
 	if cheapest_name == "":
 		return "Todas as formas despertas."
 	return "%s  •  faltam %d cristais" % [cheapest_name, max(0, cheapest_price - total_crystals)]
@@ -1479,8 +1395,8 @@ func claim_daily_reward() -> void:
 	total_crystals += 180
 	save_game()
 	update_daily_button()
-	show_status("+180 ESSÊNCIA DIÁRIA", C_GOLD)
-	spawn_shockwave(player.position, C_GOLD, 40.0, 250.0, 0.65)
+	show_status("+180 ESSÊNCIA DIÁRIA", GameConfig.C_GOLD)
+	spawn_shockwave(player.position, GameConfig.C_GOLD, 40.0, 250.0, 0.65)
 
 func update_daily_button() -> void:
 	if daily_button == null:
@@ -1499,13 +1415,13 @@ func update_neo_menu() -> void:
 	if neo_ui == null or neo_ui.menu == null:
 		return
 	var cnt: int = unlocked_circle_count()
-	var accent: Color = C_JADE
+	var accent: Color = GameConfig.C_JADE
 	if cnt > 0:
 		accent = circle_color(cnt)
 	var today: String = current_day_key()
 	neo_ui.menu.set_data(
 		get_cultivation_stage_name(), cultivation_xp,
-		cnt, RESONANCE_CIRCLES.size(),
+		cnt, GameConfig.RESONANCE_CIRCLES.size(),
 		int(best_distance), total_crystals,
 		last_daily_reward != today, accent, max(1, cnt)
 	)
@@ -1514,9 +1430,9 @@ func update_neo_menu() -> void:
 func update_neo_pavilion() -> void:
 	if neo_ui == null or neo_ui.pavilion == null:
 		return
-	if not SKINS.has(selected_shop_skin):
+	if not GameConfig.SKINS.has(selected_shop_skin):
 		selected_shop_skin = selected_skin
-	var data: Dictionary = SKINS[selected_shop_skin]
+	var data: Dictionary = GameConfig.SKINS[selected_shop_skin]
 	var rarity: String = skin_rarity(selected_shop_skin)
 	neo_ui.pavilion.set_data(
 		selected_shop_skin,
@@ -1533,21 +1449,21 @@ func _neo_skin_buttons_data() -> Array[Dictionary]:
 	var result: Array[Dictionary] = []
 	var order: Array[String] = ["nucleo_errante","semente_jade","corredor_rubi","coracao_nebular","essencia_dourada","corredor_sombrio","corredor_celestial","corredor_fragmentado"]
 	for sid in order:
-		if not SKINS.has(sid):
-			result.append({"name": sid, "state": "?", "color": C_JADE})
+		if not GameConfig.SKINS.has(sid):
+			result.append({"name": sid, "state": "?", "color": GameConfig.C_JADE})
 			continue
 		var owned: bool = bool(owned_skins.get(sid, false))
 		var equipped: bool = sid == selected_skin
-		var price: int = int(SKINS[sid]["price"])
+		var price: int = int(GameConfig.SKINS[sid]["price"])
 		var state: String = "EQUIPADO" if equipped else ("LIBERADO" if owned else "%d" % price)
-		result.append({"name": str(SKINS[sid]["name"]), "state": state, "color": rarity_color_for(skin_rarity(sid))})
+		result.append({"name": str(GameConfig.SKINS[sid]["name"]), "state": state, "color": rarity_color_for(skin_rarity(sid))})
 	return result
 
 func update_neo_core() -> void:
 	if neo_ui == null or neo_ui.core == null:
 		return
 	var cnt: int = unlocked_circle_count()
-	var accent: Color = C_JADE if cnt <= 0 else circle_color(cnt)
+	var accent: Color = GameConfig.C_JADE if cnt <= 0 else circle_color(cnt)
 	neo_ui.core.set_data(
 		get_cultivation_stage_name(), cultivation_xp,
 		get_stage_progress_percent(), next_circle_hint(),
@@ -1557,7 +1473,7 @@ func update_neo_core() -> void:
 func _technique_ui_data() -> Array[Dictionary]:
 	var result: Array[Dictionary] = []
 	for tid in ["dash", "jade", "flow"]:
-		var data: Dictionary = TECHNIQUES[tid]
+		var data: Dictionary = GameConfig.TECHNIQUES[tid]
 		var level: int = tech_level(tid)
 		var max_lv: int = int(data["max"])
 		var action: String = "MAX" if level >= max_lv else "%d cristais" % technique_price(tid)
@@ -1588,20 +1504,20 @@ func update_hud() -> void:
 		resonance_label.text = "Ressonância"
 
 func _combo_color() -> Color:
-	if combo >= 20: return C_GOLD
+	if combo >= 20: return GameConfig.C_GOLD
 	if combo >= 10: return Color(1.0, 0.78, 0.30, 1.0)
-	if combo >= 5:  return C_JADE_SOFT
-	return C_GOLD
+	if combo >= 5:  return GameConfig.C_JADE_SOFT
+	return GameConfig.C_GOLD
 
 func update_shop_ui() -> void:
-	if not SKINS.has(selected_shop_skin):
+	if not GameConfig.SKINS.has(selected_shop_skin):
 		selected_shop_skin = selected_skin
-	var data: Dictionary = SKINS[selected_shop_skin]
+	var data: Dictionary = GameConfig.SKINS[selected_shop_skin]
 	var owned: bool = bool(owned_skins.get(selected_shop_skin, false))
 	var equipped: bool = selected_shop_skin == selected_skin
 	var price: int = int(data["price"])
 	var rarity: String = skin_rarity(selected_shop_skin)
-	shop_info_label.text    = "Cristais %d  •  Formas %d/%d" % [total_crystals, owned_skins.size(), SKINS.size()]
+	shop_info_label.text    = "Cristais %d  •  Formas %d/%d" % [total_crystals, owned_skins.size(), GameConfig.SKINS.size()]
 	shop_preview_name_label.text = str(data["name"])
 	shop_preview_meta_label.text = "%s  •  %s" % [rarity, skin_affinity_text(selected_shop_skin)]
 	shop_preview_meta_label.add_theme_color_override("font_color", rarity_color_for(rarity))
@@ -1620,7 +1536,7 @@ func update_shop_ui() -> void:
 		if not shop_skin_buttons.has(sid):
 			continue
 		var b: Button = shop_skin_buttons[sid]
-		var item_data: Dictionary = SKINS.get(sid, {})
+		var item_data: Dictionary = GameConfig.SKINS.get(sid, {})
 		var item_owned: bool = bool(owned_skins.get(sid, false))
 		var item_eq: bool = sid == selected_skin
 		var item_sel: bool = sid == selected_shop_skin
@@ -1638,7 +1554,7 @@ func update_cultivation_ui() -> void:
 	cultivation_next_circle_label.text = "%s\nPróximo estágio em %d XP" % [next_circle_hint(), max(0, nxt_xp - cultivation_xp)]
 	for tech_id in cultivation_upgrade_buttons.keys():
 		var b: Button = cultivation_upgrade_buttons[tech_id]
-		var td: Dictionary = TECHNIQUES[tech_id]
+		var td: Dictionary = GameConfig.TECHNIQUES[tech_id]
 		var level: int = tech_level(tech_id)
 		var max_lv: int = int(td["max"])
 		var action: String = "MAX" if level >= max_lv else "%d cristais" % technique_price(tech_id)
@@ -1700,11 +1616,11 @@ func skin_affinity_text(skin_id: String) -> String:
 
 func rarity_color_for(rarity: String) -> Color:
 	match rarity:
-		"Raro":    return C_JADE
-		"Épico":   return C_VIOLET
-		"Lendário":return C_GOLD
-		"Celestial":return C_PEARL
-		_: return C_ENERGY
+		"Raro":    return GameConfig.C_JADE
+		"Épico":   return GameConfig.C_VIOLET
+		"Lendário":return GameConfig.C_GOLD
+		"Celestial":return GameConfig.C_PEARL
+		_: return GameConfig.C_ENERGY
 
 # ── Save / load ───────────────────────────────────────────────────────────────
 func save_game() -> void:
@@ -1847,7 +1763,7 @@ func spawn_skin_trail(real_delta: float) -> void:
 		skin_trails.remove_at(0)
 
 func get_current_biome() -> Dictionary:
-	return BIOMES[clampi(current_biome_index, 0, BIOMES.size() - 1)]
+	return GameConfig.BIOMES[clampi(current_biome_index, 0, GameConfig.BIOMES.size() - 1)]
 
 func get_biome_accent() -> Color:
 	return get_current_biome()["accent"]
@@ -1886,7 +1802,7 @@ func make_button(text: String, pos: Vector2, sz: Vector2) -> Button:
 	btn.size = sz
 	var style: StyleBoxFlat = StyleBoxFlat.new()
 	style.bg_color = Color(0.022, 0.082, 0.038, 0.55)
-	style.border_color = Color(C_JADE.r, C_JADE.g, C_JADE.b, 0.42)
+	style.border_color = Color(GameConfig.C_JADE.r, GameConfig.C_JADE.g, GameConfig.C_JADE.b, 0.42)
 	style.set_border_width_all(1)
 	style.set_corner_radius_all(40)
 	style.shadow_color = Color(0, 0, 0, 0.20)
@@ -1895,14 +1811,14 @@ func make_button(text: String, pos: Vector2, sz: Vector2) -> Button:
 	btn.add_theme_stylebox_override("normal", style)
 	var hover: StyleBoxFlat = style.duplicate()
 	hover.bg_color = Color(0.040, 0.145, 0.065, 0.72)
-	hover.border_color = Color(C_JADE.r, C_JADE.g, C_JADE.b, 0.60)
+	hover.border_color = Color(GameConfig.C_JADE.r, GameConfig.C_JADE.g, GameConfig.C_JADE.b, 0.60)
 	btn.add_theme_stylebox_override("hover", hover)
 	var pressed: StyleBoxFlat = style.duplicate()
 	pressed.bg_color = Color(0.060, 0.200, 0.090, 0.82)
-	pressed.border_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.60)
+	pressed.border_color = Color(GameConfig.C_GOLD.r, GameConfig.C_GOLD.g, GameConfig.C_GOLD.b, 0.60)
 	btn.add_theme_stylebox_override("pressed", pressed)
 	btn.add_theme_font_size_override("font_size", 20)
-	btn.add_theme_color_override("font_color", C_PEARL)
+	btn.add_theme_color_override("font_color", GameConfig.C_PEARL)
 	return btn
 
 func make_button_style(bg: Color, border: Color) -> StyleBoxFlat:
@@ -1929,7 +1845,7 @@ func make_progress_bar(pos: Vector2, sz: Vector2) -> ProgressBar:
 	bg.set_corner_radius_all(12)
 	pb.add_theme_stylebox_override("background", bg)
 	var fill: StyleBoxFlat = StyleBoxFlat.new()
-	fill.bg_color = C_JADE
+	fill.bg_color = GameConfig.C_JADE
 	fill.set_corner_radius_all(12)
 	pb.add_theme_stylebox_override("fill", fill)
 	return pb
@@ -2010,14 +1926,14 @@ func _draw_game_bg_layer_png(tex: Texture2D, speed_factor: float, alpha: float) 
 	if tw <= 0.0 or th <= 0.0:
 		return
 
-	var scale_factor: float = maxf(VIEW_W / tw, VIEW_H / th)
+	var scale_factor: float = maxf(GameConfig.VIEW_W / tw, GameConfig.VIEW_H / th)
 	var draw_size: Vector2 = Vector2(tw, th) * scale_factor
-	var base_x: float = (VIEW_W - draw_size.x) * 0.5
+	var base_x: float = (GameConfig.VIEW_W - draw_size.x) * 0.5
 
 	var scroll_y: float = fmod(scrolled_distance * speed_factor, draw_size.y)
 	var y: float = -scroll_y
 
-	while y < VIEW_H:
+	while y < GameConfig.VIEW_H:
 		draw_texture_rect(
 			tex,
 			Rect2(base_x, y, draw_size.x, draw_size.y),
@@ -2042,13 +1958,13 @@ func _draw_png_game_background() -> void:
 func _draw_wuxia_background() -> void:
 	var biome: Dictionary = get_current_biome()
 	var deep: Color = biome["deep"]
-	draw_rect(Rect2(Vector2.ZERO, Vector2(VIEW_W, VIEW_H)), deep)
+	draw_rect(Rect2(Vector2.ZERO, Vector2(GameConfig.VIEW_W, GameConfig.VIEW_H)), deep)
 	var mist_c: Color = biome["mist"]
-	for y in range(0, int(VIEW_H), 64):
-		var f: float = float(y) / VIEW_H
+	for y in range(0, int(GameConfig.VIEW_H), 64):
+		var f: float = float(y) / GameConfig.VIEW_H
 		var c: Color = deep.lerp(mist_c, 0.14 + f * 0.10)
 		c.a = 0.18
-		draw_rect(Rect2(0, y, VIEW_W, 64), c)
+		draw_rect(Rect2(0, y, GameConfig.VIEW_W, 64), c)
 	var accent: Color = biome["accent"]
 	for mp in mist_puffs:
 		var mx: float = float(mp["x"])
@@ -2072,7 +1988,7 @@ func _draw_game_bamboo() -> void:
 		var bc := Color(0.040, 0.165, 0.060, alpha)
 		var nc := Color(0.065, 0.240, 0.088, alpha * 0.85)
 		var sy: float = -seg_h + fmod(y_scroll, seg_h)
-		while sy < VIEW_H + seg_h:
+		while sy < GameConfig.VIEW_H + seg_h:
 			draw_line(Vector2(x, sy), Vector2(x, sy + seg_h - 3.0), bc, sw)
 			draw_line(Vector2(x - sw * 1.6, sy), Vector2(x + sw * 1.6, sy), nc, sw * 0.7)
 			# Leaves
@@ -2091,7 +2007,7 @@ func _draw_game_bamboo() -> void:
 		var bc := Color(0.028, 0.115, 0.042, alpha)
 		var nc := Color(0.048, 0.180, 0.065, alpha * 0.88)
 		var sy: float = -seg_h + fmod(y_scroll, seg_h)
-		while sy < VIEW_H + seg_h:
+		while sy < GameConfig.VIEW_H + seg_h:
 			draw_line(Vector2(x, sy), Vector2(x, sy + seg_h - 4.0), bc, sw)
 			draw_line(Vector2(x - sw * 1.8, sy), Vector2(x + sw * 1.8, sy), nc, sw * 0.75)
 			sy += seg_h
@@ -2100,11 +2016,11 @@ func _draw_game_bamboo() -> void:
 	if current_biome_index >= 3:
 		for i in range(4):
 			var lx: float = [55.0, 145.0, 575.0, 665.0][i]
-			var lt_y: float = fmod(float(i) * 180.0 + scrolled_distance * 0.04, VIEW_H + 80.0)
+			var lt_y: float = fmod(float(i) * 180.0 + scrolled_distance * 0.04, GameConfig.VIEW_H + 80.0)
 			var la_alpha: float = 0.35 + sin(pulse_time * 1.8 + float(i)) * 0.15
-			draw_circle(Vector2(lx, lt_y), 8.0, Color(C_LANTERN.r, C_LANTERN.g, C_LANTERN.b, la_alpha * 0.60))
-			draw_circle(Vector2(lx, lt_y), 14.0, Color(C_LANTERN.r, C_LANTERN.g, C_LANTERN.b, la_alpha * 0.18))
-			draw_rect(Rect2(lx - 5, lt_y - 14, 10, 12), Color(C_LANTERN.r * 0.8, C_LANTERN.g * 0.3, C_LANTERN.b * 0.1, la_alpha * 0.70))
+			draw_circle(Vector2(lx, lt_y), 8.0, Color(GameConfig.C_LANTERN.r, GameConfig.C_LANTERN.g, GameConfig.C_LANTERN.b, la_alpha * 0.60))
+			draw_circle(Vector2(lx, lt_y), 14.0, Color(GameConfig.C_LANTERN.r, GameConfig.C_LANTERN.g, GameConfig.C_LANTERN.b, la_alpha * 0.18))
+			draw_rect(Rect2(lx - 5, lt_y - 14, 10, 12), Color(GameConfig.C_LANTERN.r * 0.8, GameConfig.C_LANTERN.g * 0.3, GameConfig.C_LANTERN.b * 0.1, la_alpha * 0.70))
 
 	# Falling leaves
 	for lf in falling_leaves:
@@ -2123,8 +2039,8 @@ func _draw_game_mist() -> void:
 	var biome: Dictionary = get_current_biome()
 	var accent: Color = biome["accent"]
 	for i in range(3):
-		var mist_y: float = fmod(float(i) * 420.0 + scrolled_distance * 0.025, VIEW_H + 80.0)
-		draw_rect(Rect2(0, mist_y, VIEW_W, 55.0), Color(accent.r, accent.g, accent.b, 0.028 + sin(pulse_time * 0.4 + float(i)) * 0.012))
+		var mist_y: float = fmod(float(i) * 420.0 + scrolled_distance * 0.025, GameConfig.VIEW_H + 80.0)
+		draw_rect(Rect2(0, mist_y, GameConfig.VIEW_W, 55.0), Color(accent.r, accent.g, accent.b, 0.028 + sin(pulse_time * 0.4 + float(i)) * 0.012))
 
 func _draw_spiritual_lanes() -> void:
 	if screen not in ["game", "countdown"]:
@@ -2132,19 +2048,19 @@ func _draw_spiritual_lanes() -> void:
 	var biome: Dictionary = get_current_biome()
 	var accent: Color = biome["accent"]
 	var lane_alpha: float = 0.040 + (0.030 if flow_timer > 0.0 else 0.0)
-	for lane_x_off in LANES:
-		var lx: float = VIEW_W * 0.5 + lane_x_off
+	for lane_x_off in GameConfig.LANES:
+		var lx: float = GameConfig.VIEW_W * 0.5 + lane_x_off
 		var dash_period: float = 80.0
 		var dash_len: float = 44.0
 		var offset: float = fmod(scrolled_distance * 0.22, dash_period)
 		var y: float = -dash_period + offset
-		while y < VIEW_H + dash_period:
+		while y < GameConfig.VIEW_H + dash_period:
 			draw_line(Vector2(lx, y), Vector2(lx, y + dash_len), Color(accent.r, accent.g, accent.b, lane_alpha), 2.0)
 			y += dash_period
 	# Lane dividers
-	for i in range(1, LANES.size()):
-		var div_x: float = VIEW_W * 0.5 + (LANES[i - 1] + LANES[i]) * 0.5
-		draw_line(Vector2(div_x, 0), Vector2(div_x, VIEW_H), Color(accent.r, accent.g, accent.b, 0.016), 1.0)
+	for i in range(1, GameConfig.LANES.size()):
+		var div_x: float = GameConfig.VIEW_W * 0.5 + (GameConfig.LANES[i - 1] + GameConfig.LANES[i]) * 0.5
+		draw_line(Vector2(div_x, 0), Vector2(div_x, GameConfig.VIEW_H), Color(accent.r, accent.g, accent.b, 0.016), 1.0)
 
 func _draw_speed_lines() -> void:
 	if screen != "game":
@@ -2156,7 +2072,7 @@ func _draw_speed_lines() -> void:
 		return
 	for i in range(12):
 		var sx: float = 80.0 + float(i) * 48.0
-		var sy: float = fmod(float(i) * 137.0 + scrolled_distance * 0.55, VIEW_H + 60.0)
+		var sy: float = fmod(float(i) * 137.0 + scrolled_distance * 0.55, GameConfig.VIEW_H + 60.0)
 		var slen: float = 28.0 + intensity * 55.0
 		draw_line(Vector2(sx, sy), Vector2(sx + rng.randf_range(-6.0, 6.0), sy + slen), Color(accent.r, accent.g, accent.b, 0.055 * intensity), 1.2)
 
@@ -2225,8 +2141,8 @@ func _draw_obstacle(pos: Vector2, otype: String, age: float) -> void:
 			for seg in range(3):
 				var sy: float = pos.y - hh + float(seg) * (hh * 2.0 / 3.0)
 				draw_line(Vector2(pos.x - hw, sy), Vector2(pos.x + hw, sy), Color(0.048, 0.180, 0.065, 0.60), 2.0)
-			draw_rect(Rect2(pos - Vector2(hw + 1, hh + 1), Vector2(hw * 2 + 2, hh * 2 + 2)), Color(C_RUBY.r, C_RUBY.g, C_RUBY.b, 0.22))
-			draw_circle(pos, 6.0, Color(C_RUBY.r, C_RUBY.g, C_RUBY.b, 0.50))
+			draw_rect(Rect2(pos - Vector2(hw + 1, hh + 1), Vector2(hw * 2 + 2, hh * 2 + 2)), Color(GameConfig.C_RUBY.r, GameConfig.C_RUBY.g, GameConfig.C_RUBY.b, 0.22))
+			draw_circle(pos, 6.0, Color(GameConfig.C_RUBY.r, GameConfig.C_RUBY.g, GameConfig.C_RUBY.b, 0.50))
 		"stone_pillar":
 			var hw: float = 24.0
 			var hh: float = 46.0
@@ -2234,25 +2150,25 @@ func _draw_obstacle(pos: Vector2, otype: String, age: float) -> void:
 			draw_rect(Rect2(pos - Vector2(hw, hh), Vector2(hw * 2, 8)), Color(0.180, 0.170, 0.140, 0.88))
 			draw_rect(Rect2(pos + Vector2(-hw, hh - 8), Vector2(hw * 2, 8)), Color(0.180, 0.170, 0.140, 0.88))
 			var pulse_glow: float = 0.12 + sin(pulse_time * 2.2 + pos.x) * 0.06
-			draw_rect(Rect2(pos - Vector2(hw + 2, hh + 2), Vector2(hw * 2 + 4, hh * 2 + 4)), Color(C_RUBY.r, C_RUBY.g, C_RUBY.b, pulse_glow))
+			draw_rect(Rect2(pos - Vector2(hw + 2, hh + 2), Vector2(hw * 2 + 4, hh * 2 + 4)), Color(GameConfig.C_RUBY.r, GameConfig.C_RUBY.g, GameConfig.C_RUBY.b, pulse_glow))
 		"energy_barrier":
 			var hw: float = 30.0
 			var hh: float = 8.0
 			var eb_pulse: float = 0.55 + sin(pulse_time * 5.0 + pos.x * 0.02) * 0.35
-			draw_rect(Rect2(pos - Vector2(hw, hh * 3.0), Vector2(hw * 2, hh * 6.0)), Color(C_RUBY.r, C_RUBY.g, C_RUBY.b, 0.14))
+			draw_rect(Rect2(pos - Vector2(hw, hh * 3.0), Vector2(hw * 2, hh * 6.0)), Color(GameConfig.C_RUBY.r, GameConfig.C_RUBY.g, GameConfig.C_RUBY.b, 0.14))
 			for yi in range(-2, 3):
-				var lc: Color = Color(C_RUBY.r, C_RUBY.g, C_RUBY.b, eb_pulse * (0.55 - absf(float(yi)) * 0.14))
+				var lc: Color = Color(GameConfig.C_RUBY.r, GameConfig.C_RUBY.g, GameConfig.C_RUBY.b, eb_pulse * (0.55 - absf(float(yi)) * 0.14))
 				draw_line(Vector2(pos.x - hw, pos.y + float(yi) * hh), Vector2(pos.x + hw, pos.y + float(yi) * hh), lc, 3.0)
-			draw_circle(pos, 10.0, Color(C_RUBY.r, C_RUBY.g, C_RUBY.b, eb_pulse * 0.72))
+			draw_circle(pos, 10.0, Color(GameConfig.C_RUBY.r, GameConfig.C_RUBY.g, GameConfig.C_RUBY.b, eb_pulse * 0.72))
 		"spirit_trap":
 			var radius: float = 26.0
 			var sp_pulse: float = 0.45 + sin(pulse_time * 3.5 + pos.y * 0.02) * 0.30
-			draw_circle(pos, radius + 8.0, Color(C_VIOLET.r, C_VIOLET.g, C_VIOLET.b, 0.10))
+			draw_circle(pos, radius + 8.0, Color(GameConfig.C_VIOLET.r, GameConfig.C_VIOLET.g, GameConfig.C_VIOLET.b, 0.10))
 			draw_circle(pos, radius, Color(0.080, 0.030, 0.160, 0.72))
 			var start: float = pulse_time * 1.2
-			draw_arc(pos, radius, start, start + PI * 1.40, 64, Color(C_VIOLET.r, C_VIOLET.g, C_VIOLET.b, sp_pulse), 3.0, true)
-			draw_arc(pos, radius * 0.60, -start * 0.7, -start * 0.7 + PI * 0.80, 32, Color(C_RUBY.r, C_RUBY.g, C_RUBY.b, sp_pulse * 0.70), 2.0, true)
-			draw_circle(pos, 8.0, Color(C_RUBY.r, C_RUBY.g, C_RUBY.b, sp_pulse))
+			draw_arc(pos, radius, start, start + PI * 1.40, 64, Color(GameConfig.C_VIOLET.r, GameConfig.C_VIOLET.g, GameConfig.C_VIOLET.b, sp_pulse), 3.0, true)
+			draw_arc(pos, radius * 0.60, -start * 0.7, -start * 0.7 + PI * 0.80, 32, Color(GameConfig.C_RUBY.r, GameConfig.C_RUBY.g, GameConfig.C_RUBY.b, sp_pulse * 0.70), 2.0, true)
+			draw_circle(pos, 8.0, Color(GameConfig.C_RUBY.r, GameConfig.C_RUBY.g, GameConfig.C_RUBY.b, sp_pulse))
 		"spinning_blade":
 			var radius: float = 22.0
 			var rot: float = pulse_time * 2.8
@@ -2260,21 +2176,21 @@ func _draw_obstacle(pos: Vector2, otype: String, age: float) -> void:
 				var a: float = rot + float(i) * PI * 0.5
 				var p1: Vector2 = pos + Vector2(cos(a), sin(a)) * radius
 				var p2: Vector2 = pos + Vector2(cos(a + PI), sin(a + PI)) * radius
-				draw_line(p1, p2, Color(C_RUBY.r, C_RUBY.g, C_RUBY.b, 0.88), 3.5)
+				draw_line(p1, p2, Color(GameConfig.C_RUBY.r, GameConfig.C_RUBY.g, GameConfig.C_RUBY.b, 0.88), 3.5)
 			draw_circle(pos, 8.0, Color(0.120, 0.050, 0.020, 0.90))
-			draw_circle(pos, 5.0, Color(C_RUBY.r, C_RUBY.g, C_RUBY.b, 0.80))
-			draw_circle(pos, radius + 6.0, Color(C_RUBY.r, C_RUBY.g, C_RUBY.b, 0.08))
+			draw_circle(pos, 5.0, Color(GameConfig.C_RUBY.r, GameConfig.C_RUBY.g, GameConfig.C_RUBY.b, 0.80))
+			draw_circle(pos, radius + 6.0, Color(GameConfig.C_RUBY.r, GameConfig.C_RUBY.g, GameConfig.C_RUBY.b, 0.08))
 		_:
-			draw_circle(pos, 28.0, Color(C_RUBY.r, C_RUBY.g, C_RUBY.b, 0.60))
+			draw_circle(pos, 28.0, Color(GameConfig.C_RUBY.r, GameConfig.C_RUBY.g, GameConfig.C_RUBY.b, 0.60))
 
 func _draw_powerup(pos: Vector2, ptype: String, age: float) -> void:
-	var c: Color = C_JADE
+	var c: Color = GameConfig.C_JADE
 	var label_text: String = "?"
 	match ptype:
-		"magnet":   c = C_JADE;   label_text = "↗"
-		"shield":   c = C_PEARL;  label_text = "⬡"
-		"slowmo":   c = C_VIOLET; label_text = "∞"
-		"dash_boost": c = C_ENERGY; label_text = "»"
+		"magnet":   c = GameConfig.C_JADE;   label_text = "↗"
+		"shield":   c = GameConfig.C_PEARL;  label_text = "⬡"
+		"slowmo":   c = GameConfig.C_VIOLET; label_text = "∞"
+		"dash_boost": c = GameConfig.C_ENERGY; label_text = "»"
 	var pulse_r: float = 22.0 + sin(pulse_time * 3.0 + age) * 3.0
 	draw_circle(pos, pulse_r + 10.0, Color(c.r, c.g, c.b, 0.12))
 	draw_circle(pos, pulse_r, Color(c.r * 0.18, c.g * 0.18, c.b * 0.18, 0.78))
@@ -2590,17 +2506,17 @@ func _draw_hud_png_overlays() -> void:
 	# Painéis premium por trás dos cards do HUD
 	_draw_hud_panel_png_rect(Rect2(8, 8, 134, 76), Color(1, 1, 1, 0.74))
 	_draw_hud_panel_png_rect(Rect2(156, 8, 214, 76), Color(1, 1, 1, 0.66))
-	_draw_hud_panel_png_rect(Rect2(VIEW_W - 188.0, 8, 142, 116), Color(1, 1, 1, 0.70))
+	_draw_hud_panel_png_rect(Rect2(GameConfig.VIEW_W - 188.0, 8, 142, 116), Color(1, 1, 1, 0.70))
 
 	# Esquerda: cristal / pontuação
-	_draw_hud_png_center(hud_icon_crystal_png, Vector2(34, 34), 42.0, C_ENERGY)
+	_draw_hud_png_center(hud_icon_crystal_png, Vector2(34, 34), 42.0, GameConfig.C_ENERGY)
 
 	# Direita: combo e dash
-	_draw_hud_png_center(hud_icon_combo_png, Vector2(VIEW_W - 168.0, 34.0), 40.0, C_GOLD)
-	_draw_hud_png_center(hud_icon_dash_png, Vector2(VIEW_W - 168.0, 76.0), 40.0, C_JADE)
+	_draw_hud_png_center(hud_icon_combo_png, Vector2(GameConfig.VIEW_W - 168.0, 34.0), 40.0, GameConfig.C_GOLD)
+	_draw_hud_png_center(hud_icon_dash_png, Vector2(GameConfig.VIEW_W - 168.0, 76.0), 40.0, GameConfig.C_JADE)
 
 	# Pause no canto superior direito
-	_draw_hud_png_center(hud_icon_pause_png, Vector2(VIEW_W - 36.0, 34.0), 38.0, C_PEARL)
+	_draw_hud_png_center(hud_icon_pause_png, Vector2(GameConfig.VIEW_W - 36.0, 34.0), 38.0, GameConfig.C_PEARL)
 
 
 func _draw_vfx_png_overlays() -> void:
@@ -2812,7 +2728,7 @@ func _draw_player_aura() -> void:
 	var base_alpha: float = 0.06
 	if flow_timer > 0.0:
 		base_alpha = 0.18 + sin(pulse_time * 4.0) * 0.06
-		c = C_GOLD
+		c = GameConfig.C_GOLD
 	if invulnerable_timer > 0.0 and int(pulse_time * 8.0) % 2 == 0:
 		draw_circle(player.position, 36.0, Color(c.r, c.g, c.b, base_alpha + 0.08))
 	else:
@@ -2820,7 +2736,7 @@ func _draw_player_aura() -> void:
 	if magnet_timer > 0.0:
 		var mr: float = 155.0 + float(tech_level("jade")) * 25.0
 		var ma: float = 0.04 + sin(pulse_time * 3.5) * 0.02
-		draw_arc(player.position, mr, pulse_time * 0.6, pulse_time * 0.6 + PI * 1.10, 48, Color(C_JADE.r, C_JADE.g, C_JADE.b, ma), 1.5, true)
+		draw_arc(player.position, mr, pulse_time * 0.6, pulse_time * 0.6 + PI * 1.10, 48, Color(GameConfig.C_JADE.r, GameConfig.C_JADE.g, GameConfig.C_JADE.b, ma), 1.5, true)
 
 func _draw_resonance_circles() -> void:
 	if screen != "game":
@@ -2829,7 +2745,7 @@ func _draw_resonance_circles() -> void:
 	if cnt <= 0:
 		return
 	for i in range(cnt):
-		var circle_data: Dictionary = RESONANCE_CIRCLES[i]
+		var circle_data: Dictionary = GameConfig.RESONANCE_CIRCLES[i]
 		var cc: Color = circle_data["color"]
 		var r: float = 68.0 + float(i) * 14.0 + sin(pulse_time * (0.8 + float(i) * 0.12) + float(i)) * 4.0
 		var start_angle: float = pulse_time * (0.20 + float(i) * 0.04) + float(i) * 0.55
@@ -2841,22 +2757,22 @@ func _draw_dash_meter() -> void:
 		return
 	var max_cd: float = maxf(1.4, 2.8 - float(tech_level("dash")) * 0.28)
 	var fill_frac: float = clampf(1.0 - dash_cooldown / max_cd, 0.0, 1.0)
-	var cx: float = VIEW_W - 52.0
-	var cy: float = VIEW_H - 92.0
+	var cx: float = GameConfig.VIEW_W - 52.0
+	var cy: float = GameConfig.VIEW_H - 92.0
 	var radius: float = 22.0
 	draw_circle(Vector2(cx, cy), radius + 4.0, Color(0.010, 0.038, 0.016, 0.72))
-	draw_arc(Vector2(cx, cy), radius, -PI * 0.5, -PI * 0.5 + TAU * fill_frac, 48, Color(C_ENERGY.r, C_ENERGY.g, C_ENERGY.b, 0.85), 4.0, true)
+	draw_arc(Vector2(cx, cy), radius, -PI * 0.5, -PI * 0.5 + TAU * fill_frac, 48, Color(GameConfig.C_ENERGY.r, GameConfig.C_ENERGY.g, GameConfig.C_ENERGY.b, 0.85), 4.0, true)
 	if fill_frac >= 1.0:
-		draw_circle(Vector2(cx, cy), 12.0, Color(C_ENERGY.r, C_ENERGY.g, C_ENERGY.b, 0.82))
+		draw_circle(Vector2(cx, cy), 12.0, Color(GameConfig.C_ENERGY.r, GameConfig.C_ENERGY.g, GameConfig.C_ENERGY.b, 0.82))
 
 func _draw_form_unlock_overlay() -> void:
 	if form_unlock_timer <= 0.0:
 		return
 	var alpha: float = minf(form_unlock_timer * 1.4, 1.0) * 0.75
 	var c: Color = skin_color(form_unlock_skin)
-	draw_rect(Rect2(Vector2.ZERO, Vector2(VIEW_W, VIEW_H)), Color(c.r * 0.12, c.g * 0.12, c.b * 0.12, alpha * 0.24))
-	var cx: float = VIEW_W * 0.5
-	var cy: float = VIEW_H * 0.45
+	draw_rect(Rect2(Vector2.ZERO, Vector2(GameConfig.VIEW_W, GameConfig.VIEW_H)), Color(c.r * 0.12, c.g * 0.12, c.b * 0.12, alpha * 0.24))
+	var cx: float = GameConfig.VIEW_W * 0.5
+	var cy: float = GameConfig.VIEW_H * 0.45
 	draw_circle(Vector2(cx, cy), 220.0 * (1.0 + (2.8 - form_unlock_timer) * 0.12), Color(c.r, c.g, c.b, alpha * 0.08))
 	draw_string(ThemeDB.fallback_font, Vector2(cx - 180.0, cy), "NOVA FORMA DESPERTA", HORIZONTAL_ALIGNMENT_CENTER, 360.0, 28, Color(c.r, c.g, c.b, alpha))
 	draw_string(ThemeDB.fallback_font, Vector2(cx - 180.0, cy + 40), form_unlock_name.to_upper(), HORIZONTAL_ALIGNMENT_CENTER, 360.0, 36, Color(1, 1, 1, alpha))
@@ -2866,22 +2782,22 @@ func _draw_flash_overlay() -> void:
 		return
 	var biome: Dictionary = get_current_biome()
 	var accent: Color = biome["accent"]
-	draw_rect(Rect2(Vector2.ZERO, Vector2(VIEW_W, VIEW_H)), Color(accent.r, accent.g, accent.b, flash_alpha * 0.40))
+	draw_rect(Rect2(Vector2.ZERO, Vector2(GameConfig.VIEW_W, GameConfig.VIEW_H)), Color(accent.r, accent.g, accent.b, flash_alpha * 0.40))
 
 func _draw_neo_shell() -> void:
-	var accent: Color = C_JADE
+	var accent: Color = GameConfig.C_JADE
 	if screen == "shop":
 		accent = rarity_color_for(skin_rarity(selected_shop_skin))
 	elif screen == "cultivation":
-		accent = C_GOLD
+		accent = GameConfig.C_GOLD
 
-	draw_rect(Rect2(Vector2.ZERO, Vector2(VIEW_W, VIEW_H)), Color(0.008, 0.022, 0.012, 0.65))
+	draw_rect(Rect2(Vector2.ZERO, Vector2(GameConfig.VIEW_W, GameConfig.VIEW_H)), Color(0.008, 0.022, 0.012, 0.65))
 	# Subtle grid
 	for i in range(9):
 		var ly: float = 220.0 + float(i) * 76.0 + sin(pulse_time * 0.32 + float(i)) * 8.0
-		draw_line(Vector2(44.0, ly), Vector2(VIEW_W - 44.0, ly + sin(float(i)) * 18.0), Color(accent.r, accent.g, accent.b, 0.018), 1.0)
+		draw_line(Vector2(44.0, ly), Vector2(GameConfig.VIEW_W - 44.0, ly + sin(float(i)) * 18.0), Color(accent.r, accent.g, accent.b, 0.018), 1.0)
 	# Ambient orb
-	var top: Vector2 = Vector2(VIEW_W * 0.5, 128.0)
+	var top: Vector2 = Vector2(GameConfig.VIEW_W * 0.5, 128.0)
 	draw_circle(top, 320.0, Color(accent.r, accent.g, accent.b, 0.024))
 	for i in range(4):
 		var r: float = 108.0 + float(i) * 26.0 + sin(pulse_time * 0.45 + float(i)) * 4.0
@@ -2892,9 +2808,9 @@ func _draw_result_badges() -> void:
 	if result_reveal_timer < 0.5:
 		return
 	var badges: Array = [
-		{"label": "Distância", "value": "%d m" % int(distance),    "color": C_JADE,   "x": 130.0},
-		{"label": "Cristais",  "value": str(crystals_run),           "color": C_ENERGY, "x": 360.0},
-		{"label": "Combo",     "value": "x%d" % max_combo_run,       "color": C_GOLD,   "x": 590.0},
+		{"label": "Distância", "value": "%d m" % int(distance),    "color": GameConfig.C_JADE,   "x": 130.0},
+		{"label": "Cristais",  "value": str(crystals_run),           "color": GameConfig.C_ENERGY, "x": 360.0},
+		{"label": "Combo",     "value": "x%d" % max_combo_run,       "color": GameConfig.C_GOLD,   "x": 590.0},
 	]
 	var base_y: float = 196.0
 	for bd in badges:
@@ -2904,5 +2820,5 @@ func _draw_result_badges() -> void:
 		draw_circle(bpos, 52.0 * pulse_sc, Color(bc.r, bc.g, bc.b, 0.055))
 		var start: float = pulse_time * 0.22
 		draw_arc(bpos, 46.0 * pulse_sc, start, start + PI * 1.40, 72, Color(bc.r, bc.g, bc.b, 0.22), 2.0, true)
-		draw_string(ThemeDB.fallback_font, bpos + Vector2(-60.0, -10.0), str(bd["value"]), HORIZONTAL_ALIGNMENT_CENTER, 120.0, 20, Color(C_PEARL.r, C_PEARL.g, C_PEARL.b, 0.92))
+		draw_string(ThemeDB.fallback_font, bpos + Vector2(-60.0, -10.0), str(bd["value"]), HORIZONTAL_ALIGNMENT_CENTER, 120.0, 20, Color(GameConfig.C_PEARL.r, GameConfig.C_PEARL.g, GameConfig.C_PEARL.b, 0.92))
 		draw_string(ThemeDB.fallback_font, bpos + Vector2(-60.0, 18.0), str(bd["label"]), HORIZONTAL_ALIGNMENT_CENTER, 120.0, 13, Color(0.76, 0.94, 0.82, 0.72))
