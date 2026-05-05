@@ -1193,13 +1193,19 @@ func activate_flow_state() -> void:
 
 # ── Spawners ──────────────────────────────────────────────────────────────────
 func _spawn_obstacle_pattern() -> void:
-	var pattern_weights: Array[float] = [40.0, 25.0, 18.0, 12.0, 5.0]
-	if difficulty < 1.0:
-		pattern_weights = [70.0, 20.0, 10.0, 0.0, 0.0]
-	elif difficulty < 2.5:
-		pattern_weights = [50.0, 28.0, 15.0, 7.0, 0.0]
-	var patterns: Array[String] = ["single", "wall_gap", "alternate", "narrow", "barrage"]
-	var chosen: String = _weighted_choice(patterns, pattern_weights)
+	var chosen: String = "single"
+
+	if spawner_system != null:
+		chosen = spawner_system.pick_obstacle_pattern(difficulty)
+	else:
+		var pattern_weights: Array[float] = [40.0, 25.0, 18.0, 12.0, 5.0]
+		if difficulty < 1.0:
+			pattern_weights = [70.0, 20.0, 10.0, 0.0, 0.0]
+		elif difficulty < 2.5:
+			pattern_weights = [50.0, 28.0, 15.0, 7.0, 0.0]
+		var patterns: Array[String] = ["single", "wall_gap", "alternate", "narrow", "barrage"]
+		chosen = _weighted_choice(patterns, pattern_weights)
+
 	var y_start: float = -80.0
 
 	match chosen:
@@ -1219,7 +1225,6 @@ func _spawn_obstacle_pattern() -> void:
 		"barrage":
 			for lane in range(3):
 				_spawn_obstacle(lane, y_start - float(lane) * 90.0)
-
 func _spawn_obstacle(lane: int, y: float) -> void:
 	var obs_types: Array[String] = ["bamboo_wall", "stone_pillar", "energy_barrier", "spirit_trap"]
 	var obs_weights: Array[float] = [40.0, 30.0, 20.0, 10.0]
