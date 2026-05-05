@@ -4,6 +4,7 @@ const PlayerControllerBridge = preload("res://scripts/player/PlayerController.gd
 const SpawnerSystemBridge = preload("res://scripts/core/SpawnerSystem.gd")
 const EntityFactoryBridge = preload("res://scripts/core/EntityFactory.gd")
 const EntitySystemBridge = preload("res://scripts/core/EntitySystem.gd")
+const RunStateSystemBridge = preload("res://scripts/core/RunStateSystem.gd")
 
 # Fragment Rush: Corrida dos Cristais
 # v2.0 - Wuxia Reborn: Stickman Marcial, Bambu, Jade e Fluxo Espiritual
@@ -427,6 +428,50 @@ func trigger_player_hit_flash(value: float = 1.0) -> void:
 		player_hit_flash = player_controller.get_hit_flash()
 	else:
 		player_hit_flash = maxf(player_hit_flash, value)
+func apply_run_state(state: Dictionary) -> void:
+	score = int(state["score"])
+	crystals_run = int(state["crystals_run"])
+	rare_crystals_run = int(state["rare_crystals_run"])
+	dashes_used_run = int(state["dashes_used_run"])
+	combo = int(state["combo"])
+	max_combo_run = int(state["max_combo_run"])
+
+	distance = float(state["distance"])
+	scrolled_distance = float(state["scrolled_distance"])
+	run_time = float(state["run_time"])
+	speed = float(state["speed"])
+	difficulty = float(state["difficulty"])
+
+	player_lane = int(state["player_lane"])
+	player_lean = float(state["player_lean"])
+	player_lean_target = float(state["player_lean_target"])
+	player_run_phase = float(state["player_run_phase"])
+	player_hit_flash = float(state["player_hit_flash"])
+
+	dash_cooldown = float(state["dash_cooldown"])
+	dash_timer = float(state["dash_timer"])
+	invulnerable_timer = float(state["invulnerable_timer"])
+	magnet_timer = float(state["magnet_timer"])
+	slowmo_timer = float(state["slowmo_timer"])
+	resonance_value = float(state["resonance_value"])
+	flow_timer = float(state["flow_timer"])
+	flow_activations = int(state["flow_activations"])
+
+	current_biome_index = int(state["current_biome_index"])
+	spawn_timer = float(state["spawn_timer"])
+	crystal_spawn_timer = float(state["crystal_spawn_timer"])
+	power_spawn_timer = float(state["power_spawn_timer"])
+	crystal_rain_timer = float(state["crystal_rain_timer"])
+	crystal_rain_active = float(state["crystal_rain_active"])
+
+	flash_alpha = float(state["flash_alpha"])
+	camera_shake = float(state["camera_shake"])
+	completed_run_missions = []
+	run_mission_bonus = int(state["run_mission_bonus"])
+	circles_unlocked_run = int(state["circles_unlocked_run"])
+	result_reveal_timer = float(state["result_reveal_timer"])
+	result_badge_pulse = float(state["result_badge_pulse"])
+
 func build_ui() -> void:
 	hud_layer = CanvasLayer.new();         add_child(hud_layer)
 	menu_layer = CanvasLayer.new();        add_child(menu_layer)
@@ -730,69 +775,38 @@ func start_game() -> void:
 	transition_label.text = str(biome["name"]).to_upper()
 	transition_subtitle.text = "O caminho se abre…"
 
+
 func _reset_run() -> void:
 	clear_entities()
 	particles.clear()
 	shockwaves.clear()
 	afterimages.clear()
 	skin_trails.clear()
-	score = 0
-	crystals_run = 0
-	rare_crystals_run = 0
-	dashes_used_run = 0
-	combo = 0
-	max_combo_run = 0
-	distance = 0.0
-	scrolled_distance = 0.0
-	run_time = 0.0
-	speed = 380.0
-	difficulty = 0.0
-	player_lane = 1
+
+	var run_state: Dictionary = RunStateSystemBridge.build_default_run_state(rng)
+	apply_run_state(run_state)
+
 	if player_controller != null:
 		player_controller.reset_to_center()
 		player_lane = player_controller.player_lane
 		target_x = player_controller.target_x
 	else:
 		target_x = screen_lane_x(player_lane)
+
 	player.position = Vector2(target_x, GameConfig.PLAYER_Y)
 	set_player_state("running")
-	player_lean = 0.0
-	player_lean_target = 0.0
-	player_run_phase = 0.0
+
 	if player_controller != null:
 		player_controller.reset_visual_motion()
 		sync_player_visual_from_controller()
-	player_hit_flash = 0.0
-	if player_controller != null:
 		player_controller.reset_hit_flash()
-	dash_cooldown = 0.0
-	dash_timer = 0.0
-	if player_controller != null:
 		player_controller.reset_dash()
-	invulnerable_timer = 0.0
-	magnet_timer = 0.0
-	slowmo_timer = 0.0
-	resonance_value = 0.0
-	flow_timer = 0.0
-	flow_activations = 0
-	current_biome_index = 0
-	spawn_timer = 0.0
-	crystal_spawn_timer = 0.0
-	power_spawn_timer = 6.0
+
 	if spawner_system != null:
 		spawner_system.reset()
 		sync_spawner_timers_from_system()
-	crystal_rain_timer = rng.randf_range(14.0, 22.0)
-	crystal_rain_active = 0.0
-	flash_alpha = 0.0
-	camera_shake = 0.0
-	completed_run_missions = []
-	run_mission_bonus = 0
-	circles_unlocked_run = 0
-	result_reveal_timer = 0.0
-	result_badge_pulse = 0.0
-	hud_layer.visible = false
 
+	hud_layer.visible = false
 func _update_countdown(delta: float) -> void:
 	run_countdown -= delta
 	var n: int = ceili(run_countdown)
