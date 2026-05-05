@@ -133,3 +133,27 @@ func is_powerup_colliding(entity: Dictionary, player_position: Vector2) -> bool:
 	var radius: float = 30.0
 
 	return delta.x < radius and delta.y < radius
+
+# ── Crystal collection helpers ────────────────────────────────────────────────
+func calculate_crystal_value(base_value: int, flow_active: bool, combo: int) -> int:
+	var value: int = base_value
+
+	if flow_active:
+		value = int(ceil(float(value) * 1.5))
+
+	if combo > 0:
+		value = int(ceil(float(value) * (1.0 + float(combo) * 0.05)))
+
+	return value
+
+
+func calculate_resonance_gain(combo: int) -> float:
+	return 8.0 + float(combo) * 0.6
+
+
+func should_spawn_combo_vfx(combo: int) -> bool:
+	return combo >= 5 and combo % 5 == 0
+
+
+func is_rare_crystal(entity: Dictionary) -> bool:
+	return str(entity.get("crystal_type", "common")) != "common"
