@@ -1067,10 +1067,13 @@ func _update_entities(delta: float) -> void:
 				_collect_powerup(e)
 				to_remove.append(i)
 
-	to_remove.reverse()
-	for idx in to_remove:
-		if idx < entities.size():
-			entities.remove_at(idx)
+	if entity_system != null:
+		entity_system.remove_entities_by_indices(to_remove)
+	else:
+		to_remove.reverse()
+		for idx in to_remove:
+			if idx < entities.size():
+				entities.remove_at(idx)
 func _collect_crystal(e: Dictionary) -> void:
 	var ctype: Dictionary = _get_crystal_type(str(e.get("crystal_type", "common")))
 	var val: int = int(ctype["value"])

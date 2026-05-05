@@ -103,3 +103,15 @@ func is_powerup_colliding(entity: Dictionary, player_position: Vector2) -> bool:
 	var radius: float = 30.0
 
 	return delta.x < radius and delta.y < radius
+
+# ── Entity removal bridge ─────────────────────────────────────────────────────
+func remove_entities_by_indices(indices: Array[int]) -> void:
+	if not has_bound_entities:
+		return
+
+	var sorted_indices: Array[int] = indices.duplicate()
+	sorted_indices.reverse()
+
+	for idx in sorted_indices:
+		if idx >= 0 and idx < entities_ref.size():
+			entities_ref.remove_at(idx)
