@@ -17,3 +17,7 @@ build/android/
 # Godot temporary/import/cache data
 .import/
 .godot/
+android_export.log
+android_export_xvfb.log
+godot_import.log
+test_android_export.log
