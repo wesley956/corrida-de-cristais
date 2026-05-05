@@ -1193,6 +1193,10 @@ func activate_flow_state() -> void:
 		spawn_particle(player.position + Vector2(rng.randf_range(-72.0, 72.0), rng.randf_range(-64.0, 64.0)), Color(GameConfig.C_GOLD.r, GameConfig.C_GOLD.g, GameConfig.C_GOLD.b, 0.82), 7, 0.58)
 
 # ── Spawners ──────────────────────────────────────────────────────────────────
+
+func add_entity(entity: Dictionary) -> void:
+	entities.append(entity)
+
 func _spawn_obstacle_pattern() -> void:
 	var chosen: String = "single"
 
@@ -1241,7 +1245,7 @@ func _spawn_obstacle(lane: int, y: float) -> void:
 			obs_weights = [28.0, 32.0, 22.0, 18.0]
 		otype = _weighted_choice(obs_types, obs_weights)
 
-	entities.append(EntityFactoryBridge.create_obstacle(
+	add_entity(EntityFactoryBridge.create_obstacle(
 		screen_lane_x(lane),
 		y,
 		otype
@@ -1277,7 +1281,7 @@ func _spawn_crystal_group() -> void:
 
 
 func _spawn_crystal(lane: int, y: float, ctype: Dictionary) -> void:
-	entities.append(EntityFactoryBridge.create_crystal(
+	add_entity(EntityFactoryBridge.create_crystal(
 		screen_lane_x(lane),
 		y,
 		ctype
@@ -1293,7 +1297,7 @@ func _spawn_powerup() -> void:
 		var pw: Array[float] = [45.0, 30.0, 15.0, 10.0]
 		chosen = _weighted_choice(ptypes, pw)
 
-	entities.append(EntityFactoryBridge.create_powerup(
+	add_entity(EntityFactoryBridge.create_powerup(
 		screen_lane_x(rng.randi_range(0, 2)),
 		-80.0,
 		chosen
