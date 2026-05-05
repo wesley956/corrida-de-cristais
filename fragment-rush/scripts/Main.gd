@@ -9,6 +9,7 @@ const InputSystemBridge = preload("res://scripts/core/InputSystem.gd")
 const VfxSystemBridge = preload("res://scripts/core/VfxSystem.gd")
 const HudSystemBridge = preload("res://scripts/core/HudSystem.gd")
 const ScreenFlowSystemBridge = preload("res://scripts/core/ScreenFlowSystem.gd")
+const ResultSystemBridge = preload("res://scripts/core/ResultSystem.gd")
 
 # Fragment Rush: Corrida dos Cristais
 # v2.0 - Wuxia Reborn: Stickman Marcial, Bambu, Jade e Fluxo Espiritual
@@ -69,6 +70,7 @@ var input_system: Node
 var vfx_system: Node
 var hud_system: Node
 var screen_flow_system: Node
+var result_system: Node
 var hud_layer: CanvasLayer
 var menu_layer: CanvasLayer
 var result_layer: CanvasLayer
@@ -432,6 +434,10 @@ func build_game_nodes() -> void:
 	screen_flow_system = ScreenFlowSystemBridge.new()
 	screen_flow_system.name = "ScreenFlowSystem"
 	add_child(screen_flow_system)
+
+	result_system = ResultSystemBridge.new()
+	result_system.name = "ResultSystem"
+	add_child(result_system)
 
 
 func set_player_state(new_state: String) -> void:
@@ -959,22 +965,62 @@ func game_over() -> void:
 		_check_missions_end()
 	_show_result()
 
+
 func _show_result() -> void:
 	var new_record: bool = distance > best_distance
 	if new_record:
 		best_distance = distance
+
 	var xp_gain: int = _calc_xp_gain()
 	var old_circles: int = unlocked_circle_count()
 	cultivation_xp += xp_gain
 	last_xp_gain = xp_gain
 	var new_circles: int = unlocked_circle_count()
 	circles_unlocked_run = max(0, new_circles - old_circles)
+
 	total_crystals += crystals_run + run_mission_bonus
 	save_game()
 
 	screen = "result"
 	_hide_all_layers()
 	result_layer.visible = true
+
+	if result_system != null:
+		var result_state: Dictionary = result_system.build_result_state(
+			new_record,
+			distance,
+			score,
+			crystals_run,
+			run_mission_bonus,
+			max_combo_run,
+			rare_crystals_run,
+			dashes_used_run,
+			run_time,
+			best_distance,
+			completed_run_missions,
+			xp_gain,
+			cultivation_xp,
+			get_next_unlock_hint(),
+			get_stage_progress_percent(),
+			total_crystals,
+			_cheapest_skin_price()
+		)
+
+		result_reveal_timer = float(result_state["result_reveal_timer"])
+		result_count_crystals = float(result_state["result_count_crystals"])
+		result_target_crystals = int(result_state["result_target_crystals"])
+		result_count_xp = float(result_state["result_count_xp"])
+		result_target_xp = int(result_state["result_target_xp"])
+
+		result_title.text = str(result_state["title_text"])
+		result_summary_label.text = str(result_state["summary_text"])
+		result_stats.text = str(result_state["stats_text"])
+		result_xp_label.text = str(result_state["xp_label_text"])
+		result_form_label.text = str(result_state["form_label_text"])
+		result_xp_bar.value = float(result_state["xp_bar_value"])
+		result_form_bar.value = float(result_state["form_bar_value"])
+		return
+
 	result_reveal_timer = 0.0
 	result_count_crystals = 0.0
 	result_target_crystals = crystals_run + run_mission_bonus
@@ -1000,24 +1046,40 @@ func _show_result() -> void:
 		stats_lines.append("Missões concluídas:")
 		for m in completed_run_missions:
 			stats_lines.append("  ✦ %s" % m)
-	result_stats.text = "\n".join(stats_lines)
+	result_stats.text = "
+".join(stats_lines)
 
 	result_xp_label.text  = "XP de Cultivo: +%d  (Total %d)" % [xp_gain, cultivation_xp]
 	result_form_label.text = "Próxima forma: %s" % get_next_unlock_hint()
 	result_xp_bar.value   = clampf(get_stage_progress_percent(), 0.0, 100.0)
 	result_form_bar.value  = clampf(float(total_crystals + crystals_run) / float(max(1, _cheapest_skin_price())) * 100.0, 0.0, 100.0)
-
 func _calc_xp_gain() -> int:
 	var base: int = int(distance * 0.18) + score / 20 + rare_crystals_run * 6 + max_combo_run * 2
 	return max(base, 8)
 
+
 func _update_result_motion(delta: float) -> void:
+	if result_system != null:
+		var motion_state: Dictionary = result_system.update_result_motion(
+			delta,
+			result_reveal_timer,
+			result_badge_pulse,
+			result_count_crystals,
+			result_target_crystals,
+			result_count_xp,
+			result_target_xp
+		)
+
+		result_reveal_timer = float(motion_state["result_reveal_timer"])
+		result_badge_pulse = float(motion_state["result_badge_pulse"])
+		result_count_crystals = float(motion_state["result_count_crystals"])
+		result_count_xp = float(motion_state["result_count_xp"])
+		return
+
 	result_reveal_timer += delta
 	result_badge_pulse += delta
 	result_count_crystals = minf(result_count_crystals + delta * 28.0, float(result_target_crystals))
 	result_count_xp = minf(result_count_xp + delta * 40.0, float(result_target_xp))
-
-# ── Main game update ──────────────────────────────────────────────────────────
 func _update_game(delta: float, real_delta: float) -> void:
 	run_time += real_delta
 	_update_player_movement(delta)
