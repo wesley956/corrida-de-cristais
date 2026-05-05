@@ -1226,13 +1226,19 @@ func _spawn_obstacle_pattern() -> void:
 			for lane in range(3):
 				_spawn_obstacle(lane, y_start - float(lane) * 90.0)
 func _spawn_obstacle(lane: int, y: float) -> void:
-	var obs_types: Array[String] = ["bamboo_wall", "stone_pillar", "energy_barrier", "spirit_trap"]
-	var obs_weights: Array[float] = [40.0, 30.0, 20.0, 10.0]
-	var biome_idx: int = current_biome_index
-	if biome_idx >= 3:
-		obs_types = ["stone_pillar", "energy_barrier", "spirit_trap", "spinning_blade"]
-		obs_weights = [28.0, 32.0, 22.0, 18.0]
-	var otype: String = _weighted_choice(obs_types, obs_weights)
+	var otype: String = "bamboo_wall"
+
+	if spawner_system != null:
+		otype = spawner_system.pick_obstacle_type(current_biome_index)
+	else:
+		var obs_types: Array[String] = ["bamboo_wall", "stone_pillar", "energy_barrier", "spirit_trap"]
+		var obs_weights: Array[float] = [40.0, 30.0, 20.0, 10.0]
+		var biome_idx: int = current_biome_index
+		if biome_idx >= 3:
+			obs_types = ["stone_pillar", "energy_barrier", "spirit_trap", "spinning_blade"]
+			obs_weights = [28.0, 32.0, 22.0, 18.0]
+		otype = _weighted_choice(obs_types, obs_weights)
+
 	entities.append({
 		"type": "obstacle",
 		"x": screen_lane_x(lane),
@@ -1243,7 +1249,6 @@ func _spawn_obstacle(lane: int, y: float) -> void:
 		"rot": 0.0,
 		"age": 0.0
 	})
-
 func _spawn_crystal_group() -> void:
 	var biome: Dictionary = get_current_biome()
 	var rare_boost: float = 1.0 + float(tech_level("jade")) * 0.08
