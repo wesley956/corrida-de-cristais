@@ -1,5 +1,7 @@
 extends Node2D
 
+const PlayerControllerBridge = preload("res://scripts/player/PlayerController.gd")
+
 # Fragment Rush: Corrida dos Cristais
 # v2.0 - Wuxia Reborn: Stickman Marcial, Bambu, Jade e Fluxo Espiritual
 
@@ -52,6 +54,7 @@ var screen: String = "menu"
 var rng: RandomNumberGenerator = RandomNumberGenerator.new()
 
 var player: Node2D
+var player_controller: Node
 var hud_layer: CanvasLayer
 var menu_layer: CanvasLayer
 var result_layer: CanvasLayer
@@ -349,17 +352,21 @@ func _input(event: InputEvent) -> void:
 			do_dash()
 
 # ── Game nodes ────────────────────────────────────────────────────────────────
+
 func screen_lane_x(lane: int) -> float:
-	return GameConfig.VIEW_W * 0.5 + GameConfig.LANES[clampi(lane, 0, GameConfig.LANES.size() - 1)]
+	return PlayerControllerBridge.screen_lane_x(lane)
 
 func build_game_nodes() -> void:
-	target_x = screen_lane_x(player_lane)
+	player_controller = PlayerControllerBridge.new()
+	player_controller.name = "PlayerController"
+	add_child(player_controller)
+	player_controller.setup(player_lane)
+
+	target_x = player_controller.target_x
 	player = Node2D.new()
 	player.name = "StickRunner"
 	player.position = Vector2(target_x, GameConfig.PLAYER_Y)
 	add_child(player)
-
-# ── UI construction ───────────────────────────────────────────────────────────
 func build_ui() -> void:
 	hud_layer = CanvasLayer.new();         add_child(hud_layer)
 	menu_layer = CanvasLayer.new();        add_child(menu_layer)
@@ -681,7 +688,12 @@ func _reset_run() -> void:
 	speed = 380.0
 	difficulty = 0.0
 	player_lane = 1
-	target_x = screen_lane_x(player_lane)
+	if player_controller != null:
+		player_controller.reset_to_center()
+		player_lane = player_controller.player_lane
+		target_x = player_controller.target_x
+	else:
+		target_x = screen_lane_x(player_lane)
 	player.position = Vector2(target_x, GameConfig.PLAYER_Y)
 	player_state = "running"
 	player_lean = 0.0
@@ -1048,15 +1060,19 @@ func _update_env_particles(delta: float) -> void:
 			mp["x"] = rng.randf() * GameConfig.VIEW_W
 		mist_puffs[i] = mp
 
-func move_lane(dir: int) -> void:
-	var new_lane: int = clampi(player_lane + dir, 0, GameConfig.LANES.size() - 1)
-	if new_lane == player_lane:
-		return
-	player_lane = new_lane
-	target_x = screen_lane_x(player_lane)
-	player_lean_target = float(dir) * 1.0
-	player_state = "moving_left" if dir < 0 else "moving_right"
 
+func move_lane(direction: int) -> void:
+	if player_controller == null:
+		return
+
+	var changed: bool = player_controller.move_lane(direction, player_state)
+	if not changed:
+		return
+
+	player_lane = player_controller.player_lane
+	target_x = player_controller.target_x
+	player_lean_target = -0.24 if direction < 0 else 0.24
+	player_state = "moving_left" if direction < 0 else "moving_right"
 func do_dash() -> void:
 	if dash_cooldown > 0.0:
 		return
