@@ -5,3 +5,15 @@ export_presets.cfg
 *.tmp
 *.apk
 *.aab
+
+# Fragment Rush build outputs
+build/web/
+build/android/
+*.apk
+*.aab
+*.keystore
+*.jks
+
+# Godot temporary/import/cache data
+.import/
+.godot/
