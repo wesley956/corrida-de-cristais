@@ -362,6 +362,7 @@ func build_game_nodes() -> void:
 	add_child(player_controller)
 	player_controller.setup(player_lane)
 	player_controller.set_state(player_state)
+	player_controller.reset_visual_motion()
 
 	target_x = player_controller.target_x
 	player = Node2D.new()
@@ -381,6 +382,14 @@ func set_player_state(new_state: String) -> void:
 func sync_player_state_from_controller() -> void:
 	if player_controller != null:
 		player_state = player_controller.get_state()
+
+
+func sync_player_visual_from_controller() -> void:
+	if player_controller != null:
+		var visual_state: Dictionary = player_controller.get_visual_state()
+		player_lean = visual_state["player_lean"]
+		player_lean_target = visual_state["player_lean_target"]
+		player_run_phase = visual_state["player_run_phase"]
 func build_ui() -> void:
 	hud_layer = CanvasLayer.new();         add_child(hud_layer)
 	menu_layer = CanvasLayer.new();        add_child(menu_layer)
@@ -712,6 +721,10 @@ func _reset_run() -> void:
 	set_player_state("running")
 	player_lean = 0.0
 	player_lean_target = 0.0
+	player_run_phase = 0.0
+	if player_controller != null:
+		player_controller.reset_visual_motion()
+		sync_player_visual_from_controller()
 	player_hit_flash = 0.0
 	dash_cooldown = 0.0
 	dash_timer = 0.0
@@ -843,24 +856,36 @@ func _update_game(delta: float, real_delta: float) -> void:
 	update_hud()
 
 func _update_player_movement(delta: float) -> void:
-	# Smooth x movement
+	if player_controller != null:
+		target_x = player_controller.target_x
+
 	var px: float = player.position.x
 	var move_speed: float = 1350.0 * delta
 	player.position.x = move_toward(px, target_x, move_speed)
-	player_lean = move_toward(player_lean, player_lean_target, 4.2 * delta)
-	if absf(player.position.x - target_x) < 6.0:
-		player_lean_target = 0.0
-		if player_state in ["moving_left", "moving_right"]:
+
+	var target_reached: bool = absf(player.position.x - target_x) < 6.0
+
+	if player_controller != null:
+		player_controller.update_visual_motion(delta, target_reached)
+		sync_player_visual_from_controller()
+	else:
+		player_lean = move_toward(player_lean, player_lean_target, 4.2 * delta)
+		if target_reached:
+			player_lean_target = 0.0
+		if player_state == "running":
+			player_run_phase += delta
+
+	if player_controller != null:
+		if player_controller.is_state(["moving_left", "moving_right"]):
 			set_player_state("running")
-	# Run animation
-	if player_state == "running":
-		player_run_phase += delta
-	# Hit flash decay
+	else:
+		if player_state in ["moving_left", "moving_right"]:
+			player_state = "running"
+
 	player_hit_flash = maxf(0.0, player_hit_flash - delta * 2.5)
-	# Invulnerability
+
 	if invulnerable_timer > 0.0:
 		invulnerable_timer -= delta
-
 func _update_speed(delta: float) -> void:
 	difficulty += delta * 0.018
 	var target_speed: float = 380.0 + difficulty * 82.0
@@ -1093,7 +1118,11 @@ func move_lane(direction: int) -> void:
 
 	player_lane = player_controller.player_lane
 	target_x = player_controller.target_x
-	player_lean_target = -0.24 if direction < 0 else 0.24
+	if player_controller != null:
+		player_controller.set_lean_target(-0.24 if direction < 0 else 0.24)
+		player_lean_target = player_controller.player_lean_target
+	else:
+		player_lean_target = -0.24 if direction < 0 else 0.24
 	set_player_state("moving_left" if direction < 0 else "moving_right")
 
 func do_dash() -> void:

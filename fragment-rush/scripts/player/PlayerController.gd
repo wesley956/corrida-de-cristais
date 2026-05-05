@@ -8,6 +8,9 @@ signal lane_changed(lane: int, target_x: float, direction: int)
 var player_lane: int = 1
 var target_x: float = 0.0
 var player_state: String = "running"
+var player_lean: float = 0.0
+var player_lean_target: float = 0.0
+var player_run_phase: float = 0.0
 
 
 func setup(initial_lane: int = 1) -> void:
@@ -74,6 +77,35 @@ func get_state() -> String:
 
 func is_state(states: Array) -> bool:
 	return player_state in states
+
+
+# ── Visual bridge ──────────────────────────────────────────────────────────────
+func set_lean_target(value: float) -> void:
+	player_lean_target = value
+
+
+func reset_visual_motion() -> void:
+	player_lean = 0.0
+	player_lean_target = 0.0
+	player_run_phase = 0.0
+
+
+func update_visual_motion(delta: float, is_target_reached: bool = false) -> void:
+	player_lean = move_toward(player_lean, player_lean_target, 4.2 * delta)
+
+	if is_target_reached:
+		player_lean_target = 0.0
+
+	if player_state == "running":
+		player_run_phase += delta
+
+
+func get_visual_state() -> Dictionary:
+	return {
+		"player_lean": player_lean,
+		"player_lean_target": player_lean_target,
+		"player_run_phase": player_run_phase
+	}
 
 # ── Dash bridge ────────────────────────────────────────────────────────────────
 var dash_cooldown: float = 0.0
