@@ -1,15 +1,28 @@
 extends Node
-## SpawnerSystem.gd - Etapa 3A-1
-## Ponte segura para timers de spawn.
+## SpawnerSystem.gd
+## Ponte segura para decisões de spawn do Fragment Rush.
 ##
-## Controla apenas quando pedir spawn.
-## A criação real das entidades continua no Main.gd.
+## Responsabilidades atuais:
+## - Controlar timers de spawn.
+## - Escolher padrões de obstáculos.
+## - Escolher padrões de cristais.
+## - Escolher tipos de power-up.
+## - Escolher tipos de obstáculo.
+##
+## A criação real das entidades ainda continua no Main.gd.
 
+# ── Timers ────────────────────────────────────────────────────────────────────
 var spawn_timer: float = 0.0
 var crystal_spawn_timer: float = 0.0
 var power_spawn_timer: float = 6.0
 
 var rng: RandomNumberGenerator = RandomNumberGenerator.new()
+
+
+# ── Setup / lifecycle ─────────────────────────────────────────────────────────
+func setup_rng(source_rng: RandomNumberGenerator) -> void:
+	if source_rng != null:
+		rng = source_rng
 
 
 func reset() -> void:
@@ -18,11 +31,7 @@ func reset() -> void:
 	power_spawn_timer = 6.0
 
 
-func setup_rng(source_rng: RandomNumberGenerator) -> void:
-	if source_rng != null:
-		rng = source_rng
-
-
+# ── Timer bridge ──────────────────────────────────────────────────────────────
 func update_spawners(delta: float, difficulty: float, crystal_rain_active: float) -> Dictionary:
 	var requests: Dictionary = {
 		"obstacle": false,
@@ -61,6 +70,7 @@ func get_timer_state() -> Dictionary:
 		"power_spawn_timer": power_spawn_timer
 	}
 
+
 # ── Obstacle pattern bridge ───────────────────────────────────────────────────
 func pick_obstacle_pattern(difficulty: float) -> String:
 	var pattern_weights: Array[float] = [40.0, 25.0, 18.0, 12.0, 5.0]
@@ -74,6 +84,32 @@ func pick_obstacle_pattern(difficulty: float) -> String:
 	return _weighted_choice(patterns, pattern_weights)
 
 
+# ── Crystal pattern bridge ────────────────────────────────────────────────────
+func pick_crystal_pattern() -> int:
+	return rng.randi_range(0, 3)
+
+
+# ── PowerUp type bridge ───────────────────────────────────────────────────────
+func pick_powerup_type() -> String:
+	var ptypes: Array[String] = ["magnet", "shield", "slowmo", "dash_boost"]
+	var weights: Array[float] = [45.0, 30.0, 15.0, 10.0]
+
+	return _weighted_choice(ptypes, weights)
+
+
+# ── Obstacle type bridge ──────────────────────────────────────────────────────
+func pick_obstacle_type(current_biome_index: int) -> String:
+	var obs_types: Array[String] = ["bamboo_wall", "stone_pillar", "energy_barrier", "spirit_trap"]
+	var obs_weights: Array[float] = [40.0, 30.0, 20.0, 10.0]
+
+	if current_biome_index >= 3:
+		obs_types = ["stone_pillar", "energy_barrier", "spirit_trap", "spinning_blade"]
+		obs_weights = [28.0, 32.0, 22.0, 18.0]
+
+	return _weighted_choice(obs_types, obs_weights)
+
+
+# ── Helpers ───────────────────────────────────────────────────────────────────
 func _weighted_choice(options: Array, weights: Array) -> String:
 	var total: float = 0.0
 
@@ -92,24 +128,3 @@ func _weighted_choice(options: Array, weights: Array) -> String:
 			return str(options[i])
 
 	return str(options[0])
-
-# ── Crystal pattern bridge ────────────────────────────────────────────────────
-func pick_crystal_pattern() -> int:
-	return rng.randi_range(0, 3)
-
-# ── PowerUp type bridge ───────────────────────────────────────────────────────
-func pick_powerup_type() -> String:
-	var ptypes: Array[String] = ["magnet", "shield", "slowmo", "dash_boost"]
-	var weights: Array[float] = [45.0, 30.0, 15.0, 10.0]
-	return _weighted_choice(ptypes, weights)
-
-# ── Obstacle type bridge ──────────────────────────────────────────────────────
-func pick_obstacle_type(current_biome_index: int) -> String:
-	var obs_types: Array[String] = ["bamboo_wall", "stone_pillar", "energy_barrier", "spirit_trap"]
-	var obs_weights: Array[float] = [40.0, 30.0, 20.0, 10.0]
-
-	if current_biome_index >= 3:
-		obs_types = ["stone_pillar", "energy_barrier", "spirit_trap", "spinning_blade"]
-		obs_weights = [28.0, 32.0, 22.0, 18.0]
-
-	return _weighted_choice(obs_types, obs_weights)
