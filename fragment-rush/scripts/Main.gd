@@ -6,6 +6,7 @@ const EntityFactoryBridge = preload("res://scripts/core/EntityFactory.gd")
 const EntitySystemBridge = preload("res://scripts/core/EntitySystem.gd")
 const RunStateSystemBridge = preload("res://scripts/core/RunStateSystem.gd")
 const InputSystemBridge = preload("res://scripts/core/InputSystem.gd")
+const VfxSystemBridge = preload("res://scripts/core/VfxSystem.gd")
 
 # Fragment Rush: Corrida dos Cristais
 # v2.0 - Wuxia Reborn: Stickman Marcial, Bambu, Jade e Fluxo Espiritual
@@ -63,6 +64,7 @@ var player_controller: Node
 var spawner_system: Node
 var entity_system: Node
 var input_system: Node
+var vfx_system: Node
 var hud_layer: CanvasLayer
 var menu_layer: CanvasLayer
 var result_layer: CanvasLayer
@@ -405,6 +407,18 @@ func build_game_nodes() -> void:
 	input_system.dash_requested.connect(do_dash)
 	input_system.pause_requested.connect(pause_game)
 	input_system.resume_requested.connect(resume_game)
+
+	vfx_system = VfxSystemBridge.new()
+	vfx_system.name = "VfxSystem"
+	vfx_system.setup_rng(rng)
+	vfx_system.bind_effect_arrays(
+		particles,
+		shockwaves,
+		afterimages,
+		skin_trails,
+		vfx_png_sprites
+	)
+	add_child(vfx_system)
 
 
 func set_player_state(new_state: String) -> void:
@@ -797,10 +811,14 @@ func start_game() -> void:
 
 func _reset_run() -> void:
 	clear_entities()
-	particles.clear()
-	shockwaves.clear()
-	afterimages.clear()
-	skin_trails.clear()
+	if vfx_system != null:
+		vfx_system.clear_all()
+	else:
+		particles.clear()
+		shockwaves.clear()
+		afterimages.clear()
+		skin_trails.clear()
+		vfx_png_sprites.clear()
 
 	if input_system != null:
 		input_system.reset_touch()
@@ -1968,60 +1986,67 @@ func _update_environment(delta: float) -> void:
 func _update_menu_motion(_delta: float) -> void:
 	pass
 
+
 func _update_impact_fx(delta: float) -> void:
-	_update_vfx_png(delta)
-	var remove_sw: Array[int] = []
-	for i in range(shockwaves.size()):
-		var sw := shockwaves[i]
-		sw["age"] = float(sw["age"]) + delta
-		shockwaves[i] = sw
-		if float(sw["age"]) >= float(sw["duration"]):
-			remove_sw.append(i)
-	remove_sw.reverse()
-	for idx in remove_sw:
-		shockwaves.remove_at(idx)
+	if vfx_system != null:
+		vfx_system.update_effects(delta)
+	else:
+		_update_vfx_png(delta)
 
-	var remove_ai: Array[int] = []
-	for i in range(afterimages.size()):
-		var ai := afterimages[i]
-		ai["age"] = float(ai["age"]) + delta
-		afterimages[i] = ai
-		if float(ai["age"]) >= float(ai["duration"]):
-			remove_ai.append(i)
-	remove_ai.reverse()
-	for idx in remove_ai:
-		afterimages.remove_at(idx)
+		var remove_sw: Array[int] = []
+		for i in range(shockwaves.size()):
+			var sw := shockwaves[i]
+			sw["age"] = float(sw["age"]) + delta
+			shockwaves[i] = sw
+			if float(sw["age"]) >= float(sw["duration"]):
+				remove_sw.append(i)
+		remove_sw.reverse()
+		for idx in remove_sw:
+			shockwaves.remove_at(idx)
 
-	var remove_p: Array[int] = []
-	for i in range(particles.size()):
-		var p := particles[i]
-		p["age"] = float(p["age"]) + delta
-		p["x"] = float(p["x"]) + float(p["vx"]) * delta
-		p["y"] = float(p["y"]) + float(p["vy"]) * delta
-		p["vy"] = float(p["vy"]) + 120.0 * delta
-		particles[i] = p
-		if float(p["age"]) >= float(p["duration"]):
-			remove_p.append(i)
-	remove_p.reverse()
-	for idx in remove_p:
-		particles.remove_at(idx)
+		var remove_ai: Array[int] = []
+		for i in range(afterimages.size()):
+			var ai := afterimages[i]
+			ai["age"] = float(ai["age"]) + delta
+			afterimages[i] = ai
+			if float(ai["age"]) >= float(ai["duration"]):
+				remove_ai.append(i)
+		remove_ai.reverse()
+		for idx in remove_ai:
+			afterimages.remove_at(idx)
 
-	var remove_st: Array[int] = []
-	for i in range(skin_trails.size()):
-		var st := skin_trails[i]
-		st["age"] = float(st["age"]) + delta
-		skin_trails[i] = st
-		if float(st["age"]) >= float(st["duration"]):
-			remove_st.append(i)
-	remove_st.reverse()
-	for idx in remove_st:
-		skin_trails.remove_at(idx)
+		var remove_p: Array[int] = []
+		for i in range(particles.size()):
+			var p := particles[i]
+			p["age"] = float(p["age"]) + delta
+			p["x"] = float(p["x"]) + float(p["vx"]) * delta
+			p["y"] = float(p["y"]) + float(p["vy"]) * delta
+			p["vy"] = float(p["vy"]) + 120.0 * delta
+			particles[i] = p
+			if float(p["age"]) >= float(p["duration"]):
+				remove_p.append(i)
+		remove_p.reverse()
+		for idx in remove_p:
+			particles.remove_at(idx)
+
+		var remove_st: Array[int] = []
+		for i in range(skin_trails.size()):
+			var st := skin_trails[i]
+			st["age"] = float(st["age"]) + delta
+			skin_trails[i] = st
+			if float(st["age"]) >= float(st["duration"]):
+				remove_st.append(i)
+		remove_st.reverse()
+		for idx in remove_st:
+			skin_trails.remove_at(idx)
 
 	if form_unlock_timer > 0.0:
 		form_unlock_timer -= delta
-
-# ── Spawning helpers ──────────────────────────────────────────────────────────
 func spawn_particle(pos: Vector2, color: Color, size: int, duration: float) -> void:
+	if vfx_system != null:
+		vfx_system.spawn_particle(pos, color, size, duration)
+		return
+
 	particles.append({
 		"x": pos.x, "y": pos.y,
 		"vx": rng.randf_range(-80.0, 80.0),
@@ -2031,13 +2056,32 @@ func spawn_particle(pos: Vector2, color: Color, size: int, duration: float) -> v
 	})
 
 func spawn_shockwave(pos: Vector2, color: Color, start_radius: float, end_radius: float, duration: float) -> void:
-	shockwaves.append({"pos": pos, "color": color, "start": start_radius, "end": end_radius, "duration": duration, "age": 0.0})
+	if vfx_system != null:
+		vfx_system.spawn_shockwave(pos, color, start_radius, end_radius, duration)
+		return
+
+	shockwaves.append({
+		"pos": pos,
+		"color": color,
+		"start": start_radius,
+		"end": end_radius,
+		"duration": duration,
+		"age": 0.0
+	})
 
 func spawn_afterimage(pos: Vector2, color: Color, duration: float) -> void:
-	afterimages.append({"pos": pos, "color": color, "duration": duration, "age": 0.0, "lean": player_lean, "state": player_state})
-	if afterimages.size() > 14:
-		afterimages.remove_at(0)
+	if vfx_system != null:
+		vfx_system.spawn_afterimage(pos, color, duration, player_lean, player_state)
+		return
 
+	afterimages.append({
+		"pos": pos,
+		"color": color,
+		"duration": duration,
+		"age": 0.0,
+		"lean": player_lean,
+		"state": player_state
+	})
 func spawn_skin_trail(real_delta: float) -> void:
 	if screen != "game":
 		return
@@ -2698,7 +2742,12 @@ func _ensure_vfx_png_loaded() -> void:
 	vfx_combo_png = _load_vfx_png_direct("res://assets/vfx/vfx_combo_burst.png")
 	vfx_aura_png = _load_vfx_png_direct("res://assets/vfx/vfx_aura_ring.png")
 
+
 func _spawn_vfx_png(pos: Vector2, kind: String, color: Color, size_px: float, duration: float, rotation: float = 0.0) -> void:
+	if vfx_system != null:
+		vfx_system.spawn_vfx_png(pos, kind, color, size_px, duration, rotation)
+		return
+
 	vfx_png_sprites.append({
 		"pos": pos,
 		"kind": kind,
@@ -2711,7 +2760,6 @@ func _spawn_vfx_png(pos: Vector2, kind: String, color: Color, size_px: float, du
 
 	if vfx_png_sprites.size() > 64:
 		vfx_png_sprites.remove_at(0)
-
 func _update_vfx_png(delta: float) -> void:
 	var remove_list: Array[int] = []
 
