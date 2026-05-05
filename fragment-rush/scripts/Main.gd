@@ -1,6 +1,7 @@
 extends Node2D
 
 const PlayerControllerBridge = preload("res://scripts/player/PlayerController.gd")
+const SpawnerSystemBridge = preload("res://scripts/core/SpawnerSystem.gd")
 
 # Fragment Rush: Corrida dos Cristais
 # v2.0 - Wuxia Reborn: Stickman Marcial, Bambu, Jade e Fluxo Espiritual
@@ -55,6 +56,7 @@ var rng: RandomNumberGenerator = RandomNumberGenerator.new()
 
 var player: Node2D
 var player_controller: Node
+var spawner_system: Node
 var hud_layer: CanvasLayer
 var menu_layer: CanvasLayer
 var result_layer: CanvasLayer
@@ -371,6 +373,11 @@ func build_game_nodes() -> void:
 	player.position = Vector2(target_x, GameConfig.PLAYER_Y)
 	add_child(player)
 
+	spawner_system = SpawnerSystemBridge.new()
+	spawner_system.name = "SpawnerSystem"
+	spawner_system.setup_rng(rng)
+	add_child(spawner_system)
+
 
 func set_player_state(new_state: String) -> void:
 	if player_controller != null:
@@ -396,6 +403,14 @@ func sync_player_visual_from_controller() -> void:
 func sync_player_hit_flash_from_controller() -> void:
 	if player_controller != null:
 		player_hit_flash = player_controller.get_hit_flash()
+
+
+func sync_spawner_timers_from_system() -> void:
+	if spawner_system != null:
+		var timer_state: Dictionary = spawner_system.get_timer_state()
+		spawn_timer = timer_state["spawn_timer"]
+		crystal_spawn_timer = timer_state["crystal_spawn_timer"]
+		power_spawn_timer = timer_state["power_spawn_timer"]
 
 
 func trigger_player_hit_flash(value: float = 1.0) -> void:
@@ -756,6 +771,9 @@ func _reset_run() -> void:
 	spawn_timer = 0.0
 	crystal_spawn_timer = 0.0
 	power_spawn_timer = 6.0
+	if spawner_system != null:
+		spawner_system.reset()
+		sync_spawner_timers_from_system()
 	crystal_rain_timer = rng.randf_range(14.0, 22.0)
 	crystal_rain_active = 0.0
 	flash_alpha = 0.0
@@ -931,27 +949,20 @@ func _update_biome() -> void:
 		biome_label.text = str(b["name"]).to_upper()
 
 func _update_spawning(delta: float) -> void:
-	spawn_timer -= delta
-	crystal_spawn_timer -= delta
-	power_spawn_timer -= delta
+	if spawner_system == null:
+		return
 
-	var spawn_interval: float = maxf(0.72, 1.60 - difficulty * 0.10)
-	if crystal_rain_active > 0.0:
-		spawn_interval *= 0.45
+	var requests: Dictionary = spawner_system.update_spawners(delta, difficulty, crystal_rain_active)
+	sync_spawner_timers_from_system()
 
-	if spawn_timer <= 0.0:
-		spawn_timer = spawn_interval
+	if requests["obstacle"]:
 		_spawn_obstacle_pattern()
 
-	var crystal_interval: float = maxf(0.30, 0.72 - difficulty * 0.035)
-	if crystal_spawn_timer <= 0.0:
-		crystal_spawn_timer = crystal_interval
+	if requests["crystal"]:
 		_spawn_crystal_group()
 
-	if power_spawn_timer <= 0.0:
-		power_spawn_timer = rng.randf_range(8.0, 16.0)
+	if requests["powerup"]:
 		_spawn_powerup()
-
 func _update_crystal_rain(delta: float) -> void:
 	crystal_rain_timer -= delta
 	if crystal_rain_active > 0.0:
