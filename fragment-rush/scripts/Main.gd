@@ -8,6 +8,7 @@ const RunStateSystemBridge = preload("res://scripts/core/RunStateSystem.gd")
 const InputSystemBridge = preload("res://scripts/core/InputSystem.gd")
 const VfxSystemBridge = preload("res://scripts/core/VfxSystem.gd")
 const HudSystemBridge = preload("res://scripts/core/HudSystem.gd")
+const ScreenFlowSystemBridge = preload("res://scripts/core/ScreenFlowSystem.gd")
 
 # Fragment Rush: Corrida dos Cristais
 # v2.0 - Wuxia Reborn: Stickman Marcial, Bambu, Jade e Fluxo Espiritual
@@ -67,6 +68,7 @@ var entity_system: Node
 var input_system: Node
 var vfx_system: Node
 var hud_system: Node
+var screen_flow_system: Node
 var hud_layer: CanvasLayer
 var menu_layer: CanvasLayer
 var result_layer: CanvasLayer
@@ -246,6 +248,7 @@ func _ready() -> void:
 	_setup_environment_particles()
 	build_game_nodes()
 	build_ui()
+	_bind_screen_flow_system()
 	show_menu()
 	if not tutorial_seen:
 		show_tutorial()
@@ -426,6 +429,10 @@ func build_game_nodes() -> void:
 	hud_system.name = "HudSystem"
 	add_child(hud_system)
 
+	screen_flow_system = ScreenFlowSystemBridge.new()
+	screen_flow_system.name = "ScreenFlowSystem"
+	add_child(screen_flow_system)
+
 
 func set_player_state(new_state: String) -> void:
 	if player_controller != null:
@@ -510,6 +517,25 @@ func apply_run_state(state: Dictionary) -> void:
 	circles_unlocked_run = int(state["circles_unlocked_run"])
 	result_reveal_timer = float(state["result_reveal_timer"])
 	result_badge_pulse = float(state["result_badge_pulse"])
+
+func _bind_screen_flow_system() -> void:
+	if screen_flow_system == null:
+		return
+
+	screen_flow_system.bind_screen_nodes(
+		hud_layer,
+		menu_layer,
+		result_layer,
+		shop_layer,
+		pause_layer,
+		cultivation_layer,
+		tutorial_layer,
+		transition_layer,
+		neo_ui,
+		transition_label,
+		transition_subtitle,
+		biome_label
+	)
 
 func build_ui() -> void:
 	hud_layer = CanvasLayer.new();         add_child(hud_layer)
@@ -738,44 +764,70 @@ func _build_transition() -> void:
 		transition_card.add_child(n)
 
 # ── Screen management ─────────────────────────────────────────────────────────
+
 func show_menu() -> void:
-	screen = "menu"
-	_hide_all_layers()
-	menu_layer.visible = true
-	hud_layer.visible = false
-	if neo_ui != null:
-		neo_ui.show_menu()
+	if screen_flow_system != null:
+		screen_flow_system.show_menu()
+		screen = screen_flow_system.get_screen()
+	else:
+		screen = "menu"
+		_hide_all_layers()
+		menu_layer.visible = true
+		hud_layer.visible = false
+		if neo_ui != null:
+			neo_ui.show_menu()
+
 	update_neo_menu()
 	update_daily_button()
 
 func show_shop() -> void:
-	screen = "shop"
-	_hide_all_layers()
 	selected_shop_skin = selected_skin
-	if neo_ui != null:
-		neo_ui.show_pavilion()
+
+	if screen_flow_system != null:
+		screen_flow_system.show_shop()
+		screen = screen_flow_system.get_screen()
+	else:
+		screen = "shop"
+		_hide_all_layers()
+		if neo_ui != null:
+			neo_ui.show_pavilion()
+
 	update_shop_ui()
 	update_neo_pavilion()
 
 func show_cultivation() -> void:
-	screen = "cultivation"
-	_hide_all_layers()
-	if neo_ui != null:
-		neo_ui.show_core()
+	if screen_flow_system != null:
+		screen_flow_system.show_cultivation()
+		screen = screen_flow_system.get_screen()
+	else:
+		screen = "cultivation"
+		_hide_all_layers()
+		if neo_ui != null:
+			neo_ui.show_core()
+
 	update_cultivation_ui()
 	update_neo_core()
 
 func show_tutorial() -> void:
-	screen = "tutorial"
-	_hide_all_layers()
-	tutorial_layer.visible = true
-
+	if screen_flow_system != null:
+		screen_flow_system.show_tutorial()
+		screen = screen_flow_system.get_screen()
+	else:
+		screen = "tutorial"
+		_hide_all_layers()
+		tutorial_layer.visible = true
 func close_tutorial() -> void:
 	tutorial_seen = true
 	save_game()
 	show_menu()
 
+
 func pause_game() -> void:
+	if screen_flow_system != null:
+		if screen_flow_system.pause_game(screen):
+			screen = screen_flow_system.get_screen()
+		return
+
 	if screen != "game":
 		return
 	screen = "pause"
@@ -785,6 +837,11 @@ func pause_game() -> void:
 	pause_layer.visible = true
 
 func resume_game() -> void:
+	if screen_flow_system != null:
+		if screen_flow_system.resume_game(screen):
+			screen = screen_flow_system.get_screen()
+		return
+
 	if screen != "pause":
 		return
 	screen = "game"
@@ -792,6 +849,10 @@ func resume_game() -> void:
 	pause_layer.visible = false
 
 func _hide_all_layers() -> void:
+	if screen_flow_system != null:
+		screen_flow_system.hide_all_layers()
+		return
+
 	hud_layer.visible = false
 	menu_layer.visible = false
 	result_layer.visible = false
@@ -802,19 +863,23 @@ func _hide_all_layers() -> void:
 	transition_layer.visible = false
 	if neo_ui != null:
 		neo_ui.hide_all()
-
-# ── Game start / over ─────────────────────────────────────────────────────────
 func start_game() -> void:
 	_reset_run()
-	screen = "countdown"
-	_hide_all_layers()
-	transition_layer.visible = true
-	run_countdown = 2.2
+
 	var biome: Dictionary = get_current_biome()
-	transition_label.text = str(biome["name"]).to_upper()
-	transition_subtitle.text = "O caminho se abre…"
+	var biome_name: String = str(biome["name"])
 
-
+	if screen_flow_system != null:
+		var countdown_state: Dictionary = screen_flow_system.start_countdown(biome_name, 2.2)
+		screen = str(countdown_state["screen"])
+		run_countdown = float(countdown_state["run_countdown"])
+	else:
+		screen = "countdown"
+		_hide_all_layers()
+		transition_layer.visible = true
+		run_countdown = 2.2
+		transition_label.text = biome_name.to_upper()
+		transition_subtitle.text = "O caminho se abre…"
 func _reset_run() -> void:
 	clear_entities()
 	if vfx_system != null:
@@ -853,7 +918,21 @@ func _reset_run() -> void:
 		sync_spawner_timers_from_system()
 
 	hud_layer.visible = false
+
 func _update_countdown(delta: float) -> void:
+	if screen_flow_system != null:
+		var countdown_state: Dictionary = screen_flow_system.update_countdown(
+			delta,
+			str(get_current_biome()["name"])
+		)
+
+		screen = str(countdown_state["screen"])
+		run_countdown = float(countdown_state["run_countdown"])
+
+		if bool(countdown_state["started_game"]):
+			update_hud()
+		return
+
 	run_countdown -= delta
 	var n: int = ceili(run_countdown)
 	if n > 0:
@@ -865,7 +944,6 @@ func _update_countdown(delta: float) -> void:
 		hud_layer.visible = true
 		biome_label.text = str(get_current_biome()["name"]).to_upper()
 		update_hud()
-
 func game_over() -> void:
 	invulnerable_timer = 99.0
 	set_player_state("hit")
