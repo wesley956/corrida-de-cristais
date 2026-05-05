@@ -4,19 +4,21 @@ extends Node
 ##
 ## Responsabilidades atuais:
 ## - Manter referência ao Array entities do Main.gd.
-## - Adicionar e limpar entidades.
+## - Adicionar, limpar e remover entidades.
 ## - Atualizar movimento básico e idade.
 ## - Aplicar magnetismo em cristais.
 ## - Calcular métricas simples de colisão.
-## - Remover entidades por índice.
+## - Calcular helpers puros de coleta de cristal.
+## - Calcular helpers puros de efeito de power-up.
 ##
 ## Ainda NÃO controla:
-## - Coleta.
-## - Dano.
-## - Power-ups.
+## - Coleta final.
+## - Dano final.
+## - Aplicação real de power-ups.
 ## - Desenho.
 ## - Recompensas.
 ## - Missões.
+## - VFX.
 
 # ── Bound entities ────────────────────────────────────────────────────────────
 var entities_ref: Array = []
@@ -134,6 +136,7 @@ func is_powerup_colliding(entity: Dictionary, player_position: Vector2) -> bool:
 
 	return delta.x < radius and delta.y < radius
 
+
 # ── Crystal collection helpers ────────────────────────────────────────────────
 func calculate_crystal_value(base_value: int, flow_active: bool, combo: int) -> int:
 	var value: int = base_value
@@ -157,6 +160,7 @@ func should_spawn_combo_vfx(combo: int) -> bool:
 
 func is_rare_crystal(entity: Dictionary) -> bool:
 	return str(entity.get("crystal_type", "common")) != "common"
+
 
 # ── PowerUp effect helpers ────────────────────────────────────────────────────
 func get_powerup_type(entity: Dictionary) -> String:
