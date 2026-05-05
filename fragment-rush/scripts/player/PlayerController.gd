@@ -11,6 +11,7 @@ var player_state: String = "running"
 var player_lean: float = 0.0
 var player_lean_target: float = 0.0
 var player_run_phase: float = 0.0
+var player_hit_flash: float = 0.0
 
 
 func setup(initial_lane: int = 1) -> void:
@@ -106,6 +107,23 @@ func get_visual_state() -> Dictionary:
 		"player_lean_target": player_lean_target,
 		"player_run_phase": player_run_phase
 	}
+
+
+# ── Hit flash bridge ───────────────────────────────────────────────────────────
+func trigger_hit_flash(value: float = 1.0) -> void:
+	player_hit_flash = maxf(player_hit_flash, value)
+
+
+func reset_hit_flash() -> void:
+	player_hit_flash = 0.0
+
+
+func update_hit_flash(delta: float) -> void:
+	player_hit_flash = maxf(0.0, player_hit_flash - delta * 2.5)
+
+
+func get_hit_flash() -> float:
+	return player_hit_flash
 
 # ── Dash bridge ────────────────────────────────────────────────────────────────
 var dash_cooldown: float = 0.0
