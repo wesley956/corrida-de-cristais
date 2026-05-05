@@ -1006,7 +1006,7 @@ func _update_entities(delta: float) -> void:
 			to_remove.append(i)
 			continue
 
-# Magnet
+		# Magnet
 		if entity_system != null:
 			e = entity_system.apply_crystal_magnet(
 				e,
@@ -1026,26 +1026,44 @@ func _update_entities(delta: float) -> void:
 					entities[i] = e
 
 		# Collision
-		var ex: float = float(e["x"])
-		var ey: float = float(e["y"])
-		var pdx: float = absf(player.position.x - ex)
-		var pdy: float = absf(player.position.y - ey)
+		var entity_type: String = str(e["type"])
 
-		if e["type"] == "crystal":
-			var cr: float = float(e.get("size", 18.0)) + 12.0
-			if pdx < cr and pdy < cr:
+		if entity_type == "crystal":
+			var crystal_hit: bool = false
+			if entity_system != null:
+				crystal_hit = entity_system.is_crystal_colliding(e, player.position)
+			else:
+				var cr: float = float(e.get("size", 18.0)) + 12.0
+				crystal_hit = absf(player.position.x - float(e["x"])) < cr and absf(player.position.y - float(e["y"])) < cr
+
+			if crystal_hit:
 				_collect_crystal(e)
 				to_remove.append(i)
-		elif e["type"] == "obstacle":
+
+		elif entity_type == "obstacle":
 			if invulnerable_timer > 0.0:
 				continue
-			var hw: float = float(e.get("hw", 26.0)) - 8.0
-			var hh: float = float(e.get("hh", 30.0)) - 8.0
-			if pdx < hw and pdy < hh:
+
+			var obstacle_hit: bool = false
+			if entity_system != null:
+				obstacle_hit = entity_system.is_obstacle_colliding(e, player.position)
+			else:
+				var hw: float = float(e.get("hw", 26.0)) - 8.0
+				var hh: float = float(e.get("hh", 30.0)) - 8.0
+				obstacle_hit = absf(player.position.x - float(e["x"])) < hw and absf(player.position.y - float(e["y"])) < hh
+
+			if obstacle_hit:
 				_hit_obstacle()
-		elif e["type"] == "powerup":
-			var pwr: float = 30.0
-			if pdx < pwr and pdy < pwr:
+
+		elif entity_type == "powerup":
+			var powerup_hit: bool = false
+			if entity_system != null:
+				powerup_hit = entity_system.is_powerup_colliding(e, player.position)
+			else:
+				var pwr: float = 30.0
+				powerup_hit = absf(player.position.x - float(e["x"])) < pwr and absf(player.position.y - float(e["y"])) < pwr
+
+			if powerup_hit:
 				_collect_powerup(e)
 				to_remove.append(i)
 

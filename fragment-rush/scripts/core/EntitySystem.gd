@@ -74,3 +74,32 @@ func apply_crystal_magnet(
 		updated["y"] = float(updated["y"]) + diff.y * delta * 5.5
 
 	return updated
+
+# ── Entity collision metrics bridge ───────────────────────────────────────────
+func get_collision_delta(entity: Dictionary, player_position: Vector2) -> Vector2:
+	return Vector2(
+		absf(player_position.x - float(entity["x"])),
+		absf(player_position.y - float(entity["y"]))
+	)
+
+
+func is_crystal_colliding(entity: Dictionary, player_position: Vector2) -> bool:
+	var delta: Vector2 = get_collision_delta(entity, player_position)
+	var radius: float = float(entity.get("size", 18.0)) + 12.0
+
+	return delta.x < radius and delta.y < radius
+
+
+func is_obstacle_colliding(entity: Dictionary, player_position: Vector2) -> bool:
+	var delta: Vector2 = get_collision_delta(entity, player_position)
+	var half_width: float = float(entity.get("hw", 26.0)) - 8.0
+	var half_height: float = float(entity.get("hh", 30.0)) - 8.0
+
+	return delta.x < half_width and delta.y < half_height
+
+
+func is_powerup_colliding(entity: Dictionary, player_position: Vector2) -> bool:
+	var delta: Vector2 = get_collision_delta(entity, player_position)
+	var radius: float = 30.0
+
+	return delta.x < radius and delta.y < radius
