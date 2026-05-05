@@ -701,6 +701,8 @@ func _reset_run() -> void:
 	player_hit_flash = 0.0
 	dash_cooldown = 0.0
 	dash_timer = 0.0
+	if player_controller != null:
+		player_controller.reset_dash()
 	invulnerable_timer = 0.0
 	magnet_timer = 0.0
 	slowmo_timer = 0.0
@@ -1017,14 +1019,20 @@ func _collect_powerup(e: Dictionary) -> void:
 	spawn_shockwave(Vector2(float(e["x"]), float(e["y"])), GameConfig.C_GOLD, 20.0, 110.0, 0.40)
 	flash_alpha = maxf(flash_alpha, 0.06)
 
-func _update_dash(delta: float) -> void:
-	if dash_timer > 0.0:
-		dash_timer -= delta
-		if dash_timer <= 0.0 and player_state == "dash":
-			player_state = "running"
-	if dash_cooldown > 0.0:
-		dash_cooldown -= delta
 
+func _update_dash(delta: float) -> void:
+	if player_controller != null:
+		player_controller.update_dash_timers(delta)
+		dash_timer = player_controller.dash_timer
+		dash_cooldown = player_controller.dash_cooldown
+	else:
+		if dash_timer > 0.0:
+			dash_timer = maxf(0.0, dash_timer - delta)
+		if dash_cooldown > 0.0:
+			dash_cooldown = maxf(0.0, dash_cooldown - delta)
+
+	if dash_timer <= 0.0 and player_state == "dash":
+		player_state = "running"
 func _update_powerups(delta: float) -> void:
 	if magnet_timer > 0.0:
 		magnet_timer -= delta
@@ -1073,12 +1081,16 @@ func move_lane(direction: int) -> void:
 	target_x = player_controller.target_x
 	player_lean_target = -0.24 if direction < 0 else 0.24
 	player_state = "moving_left" if direction < 0 else "moving_right"
+
 func do_dash() -> void:
-	if dash_cooldown > 0.0:
+	if player_controller == null:
 		return
-	var max_cd: float = maxf(1.4, 2.8 - float(tech_level("dash")) * 0.28)
-	dash_cooldown = max_cd
-	dash_timer = 0.28
+
+	if not player_controller.request_dash(player_state, tech_level("dash")):
+		return
+
+	dash_cooldown = player_controller.dash_cooldown
+	dash_timer = player_controller.dash_timer
 	player_state = "dash"
 	invulnerable_timer = maxf(invulnerable_timer, 0.38)
 	dashes_used_run += 1
@@ -1088,8 +1100,8 @@ func do_dash() -> void:
 	spawn_shockwave(player.position, skin_glow_color(selected_skin), 12.0, 80.0, 0.28)
 	for _i in range(8):
 		spawn_particle(player.position + Vector2(rng.randf_range(-30.0, 30.0), rng.randf_range(0.0, 48.0)), skin_glow_color(selected_skin), 5, 0.22)
+	EventBus.emit_player_dash_used()
 	_update_mission_progress("use_dash_5", dashes_used_run)
-
 func activate_flow_state() -> void:
 	flow_timer = 5.8 + float(tech_level("flow")) * 0.45 + (0.75 if has_resonance_circle(5) else 0.0)
 	flow_activations += 1
