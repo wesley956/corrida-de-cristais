@@ -3,6 +3,7 @@ extends Node2D
 const PlayerControllerBridge = preload("res://scripts/player/PlayerController.gd")
 const SpawnerSystemBridge = preload("res://scripts/core/SpawnerSystem.gd")
 const EntityFactoryBridge = preload("res://scripts/core/EntityFactory.gd")
+const EntitySystemBridge = preload("res://scripts/core/EntitySystem.gd")
 
 # Fragment Rush: Corrida dos Cristais
 # v2.0 - Wuxia Reborn: Stickman Marcial, Bambu, Jade e Fluxo Espiritual
@@ -58,6 +59,7 @@ var rng: RandomNumberGenerator = RandomNumberGenerator.new()
 var player: Node2D
 var player_controller: Node
 var spawner_system: Node
+var entity_system: Node
 var hud_layer: CanvasLayer
 var menu_layer: CanvasLayer
 var result_layer: CanvasLayer
@@ -378,6 +380,11 @@ func build_game_nodes() -> void:
 	spawner_system.name = "SpawnerSystem"
 	spawner_system.setup_rng(rng)
 	add_child(spawner_system)
+
+	entity_system = EntitySystemBridge.new()
+	entity_system.name = "EntitySystem"
+	entity_system.bind_entities(entities)
+	add_child(entity_system)
 
 
 func set_player_state(new_state: String) -> void:
@@ -724,7 +731,7 @@ func start_game() -> void:
 	transition_subtitle.text = "O caminho se abre…"
 
 func _reset_run() -> void:
-	entities.clear()
+	clear_entities()
 	particles.clear()
 	shockwaves.clear()
 	afterimages.clear()
@@ -1195,8 +1202,17 @@ func activate_flow_state() -> void:
 # ── Spawners ──────────────────────────────────────────────────────────────────
 
 func add_entity(entity: Dictionary) -> void:
-	entities.append(entity)
+	if entity_system != null:
+		entity_system.add_entity(entity)
+	else:
+		entities.append(entity)
 
+
+func clear_entities() -> void:
+	if entity_system != null:
+		entity_system.clear_entities()
+	else:
+		entities.clear()
 func _spawn_obstacle_pattern() -> void:
 	var chosen: String = "single"
 
