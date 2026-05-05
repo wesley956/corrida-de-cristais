@@ -102,3 +102,14 @@ func pick_powerup_type() -> String:
 	var ptypes: Array[String] = ["magnet", "shield", "slowmo", "dash_boost"]
 	var weights: Array[float] = [45.0, 30.0, 15.0, 10.0]
 	return _weighted_choice(ptypes, weights)
+
+# ── Obstacle type bridge ──────────────────────────────────────────────────────
+func pick_obstacle_type(current_biome_index: int) -> String:
+	var obs_types: Array[String] = ["bamboo_wall", "stone_pillar", "energy_barrier", "spirit_trap"]
+	var obs_weights: Array[float] = [40.0, 30.0, 20.0, 10.0]
+
+	if current_biome_index >= 3:
+		obs_types = ["stone_pillar", "energy_barrier", "spirit_trap", "spinning_blade"]
+		obs_weights = [28.0, 32.0, 22.0, 18.0]
+
+	return _weighted_choice(obs_types, obs_weights)
