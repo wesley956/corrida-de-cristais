@@ -92,3 +92,7 @@ func _weighted_choice(options: Array, weights: Array) -> String:
 			return str(options[i])
 
 	return str(options[0])
+
+# ── Crystal pattern bridge ────────────────────────────────────────────────────
+func pick_crystal_pattern() -> int:
+	return rng.randi_range(0, 3)

@@ -1256,6 +1256,8 @@ func _spawn_crystal_group() -> void:
 	var ctype: Dictionary = _weighted_choice_dict(adjusted_types, "weight")
 
 	var pattern: int = rng.randi_range(0, 3)
+	if spawner_system != null:
+		pattern = spawner_system.pick_crystal_pattern()
 	match pattern:
 		0: # Single
 			_spawn_crystal(rng.randi_range(0, 2), rng.randf_range(-180.0, -60.0), ctype)
