@@ -1170,15 +1170,20 @@ func _collect_powerup(e: Dictionary) -> void:
 			"dash_boost":
 				dash_cooldown = 0.0
 
-	match ptype:
-		"magnet":
-			show_status("TOQUE DE JADE — ÍMÃS", GameConfig.C_JADE)
-		"shield":
-			show_status("ESCUDO ESPIRITUAL", GameConfig.C_PEARL)
-		"slowmo":
-			show_status("FLUXO LENTO", GameConfig.C_VIOLET)
-		"dash_boost":
-			show_status("PASSO CARREGADO", GameConfig.C_ENERGY)
+	if entity_system != null:
+		var status_data: Dictionary = entity_system.get_powerup_status(ptype)
+		if str(status_data.get("text", "")) != "":
+			show_status(str(status_data["text"]), status_data["color"])
+	else:
+		match ptype:
+			"magnet":
+				show_status("TOQUE DE JADE — ÍMÃS", GameConfig.C_JADE)
+			"shield":
+				show_status("ESCUDO ESPIRITUAL", GameConfig.C_PEARL)
+			"slowmo":
+				show_status("FLUXO LENTO", GameConfig.C_VIOLET)
+			"dash_boost":
+				show_status("PASSO CARREGADO", GameConfig.C_ENERGY)
 
 	spawn_shockwave(Vector2(float(e["x"]), float(e["y"])), GameConfig.C_GOLD, 20.0, 110.0, 0.40)
 	flash_alpha = maxf(flash_alpha, 0.06)

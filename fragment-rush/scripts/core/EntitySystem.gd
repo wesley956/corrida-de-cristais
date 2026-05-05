@@ -216,3 +216,35 @@ func build_powerup_effect_state(
 				state["reset_dash_cooldown"] = true
 
 	return state
+
+
+func get_powerup_status(powerup_type: String) -> Dictionary:
+	match powerup_type:
+		"magnet":
+			return {
+				"text": "TOQUE DE JADE — ÍMÃS",
+				"color": GameConfig.C_JADE
+			}
+
+		"shield":
+			return {
+				"text": "ESCUDO ESPIRITUAL",
+				"color": GameConfig.C_PEARL
+			}
+
+		"slowmo":
+			return {
+				"text": "FLUXO LENTO",
+				"color": GameConfig.C_VIOLET
+			}
+
+		"dash_boost":
+			return {
+				"text": "PASSO CARREGADO",
+				"color": GameConfig.C_ENERGY
+			}
+
+	return {
+		"text": "",
+		"color": GameConfig.C_JADE
+	}
