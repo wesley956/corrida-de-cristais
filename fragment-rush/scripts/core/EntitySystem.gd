@@ -157,3 +157,23 @@ func should_spawn_combo_vfx(combo: int) -> bool:
 
 func is_rare_crystal(entity: Dictionary) -> bool:
 	return str(entity.get("crystal_type", "common")) != "common"
+
+# ── PowerUp effect helpers ────────────────────────────────────────────────────
+func get_powerup_type(entity: Dictionary) -> String:
+	return str(entity.get("ptype", "magnet"))
+
+
+func get_magnet_duration(jade_level: int) -> float:
+	return 5.0 + float(jade_level) * 0.6
+
+
+func get_shield_duration() -> float:
+	return 4.5
+
+
+func get_slowmo_duration() -> float:
+	return 3.0
+
+
+func should_reset_dash_cooldown(powerup_type: String) -> bool:
+	return powerup_type == "dash_boost"
