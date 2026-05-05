@@ -2,6 +2,7 @@ extends Node2D
 
 const PlayerControllerBridge = preload("res://scripts/player/PlayerController.gd")
 const SpawnerSystemBridge = preload("res://scripts/core/SpawnerSystem.gd")
+const EntityFactoryBridge = preload("res://scripts/core/EntityFactory.gd")
 
 # Fragment Rush: Corrida dos Cristais
 # v2.0 - Wuxia Reborn: Stickman Marcial, Bambu, Jade e Fluxo Espiritual
@@ -1225,6 +1226,7 @@ func _spawn_obstacle_pattern() -> void:
 		"barrage":
 			for lane in range(3):
 				_spawn_obstacle(lane, y_start - float(lane) * 90.0)
+
 func _spawn_obstacle(lane: int, y: float) -> void:
 	var otype: String = "bamboo_wall"
 
@@ -1239,16 +1241,11 @@ func _spawn_obstacle(lane: int, y: float) -> void:
 			obs_weights = [28.0, 32.0, 22.0, 18.0]
 		otype = _weighted_choice(obs_types, obs_weights)
 
-	entities.append({
-		"type": "obstacle",
-		"x": screen_lane_x(lane),
-		"y": y,
-		"hw": 28.0,
-		"hh": 38.0,
-		"otype": otype,
-		"rot": 0.0,
-		"age": 0.0
-	})
+	entities.append(EntityFactoryBridge.create_obstacle(
+		screen_lane_x(lane),
+		y,
+		otype
+	))
 func _spawn_crystal_group() -> void:
 	var biome: Dictionary = get_current_biome()
 	var rare_boost: float = 1.0 + float(tech_level("jade")) * 0.08
@@ -1278,17 +1275,13 @@ func _spawn_crystal_group() -> void:
 			_spawn_crystal(pl, rng.randf_range(-180.0, -60.0), ctype)
 			_spawn_crystal(pl, rng.randf_range(-320.0, -200.0), ctype)
 
+
 func _spawn_crystal(lane: int, y: float, ctype: Dictionary) -> void:
-	entities.append({
-		"type": "crystal",
-		"x": screen_lane_x(lane),
-		"y": y,
-		"crystal_type": str(ctype["id"]),
-		"color": ctype["color"],
-		"glow": ctype["glow"],
-		"size": float(ctype["size"]),
-		"age": 0.0
-	})
+	entities.append(EntityFactoryBridge.create_crystal(
+		screen_lane_x(lane),
+		y,
+		ctype
+	))
 
 func _spawn_powerup() -> void:
 	var chosen: String = "magnet"
@@ -1300,13 +1293,11 @@ func _spawn_powerup() -> void:
 		var pw: Array[float] = [45.0, 30.0, 15.0, 10.0]
 		chosen = _weighted_choice(ptypes, pw)
 
-	entities.append({
-		"type": "powerup",
-		"x": screen_lane_x(rng.randi_range(0, 2)),
-		"y": -80.0,
-		"ptype": chosen,
-		"age": 0.0
-	})
+	entities.append(EntityFactoryBridge.create_powerup(
+		screen_lane_x(rng.randi_range(0, 2)),
+		-80.0,
+		chosen
+	))
 func _weighted_choice(options: Array, weights: Array) -> String:
 	var total: float = 0.0
 	for w in weights:
