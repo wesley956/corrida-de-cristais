@@ -363,6 +363,7 @@ func build_game_nodes() -> void:
 	player_controller.setup(player_lane)
 	player_controller.set_state(player_state)
 	player_controller.reset_visual_motion()
+	player_controller.reset_hit_flash()
 
 	target_x = player_controller.target_x
 	player = Node2D.new()
@@ -390,6 +391,19 @@ func sync_player_visual_from_controller() -> void:
 		player_lean = visual_state["player_lean"]
 		player_lean_target = visual_state["player_lean_target"]
 		player_run_phase = visual_state["player_run_phase"]
+
+
+func sync_player_hit_flash_from_controller() -> void:
+	if player_controller != null:
+		player_hit_flash = player_controller.get_hit_flash()
+
+
+func trigger_player_hit_flash(value: float = 1.0) -> void:
+	if player_controller != null:
+		player_controller.trigger_hit_flash(value)
+		player_hit_flash = player_controller.get_hit_flash()
+	else:
+		player_hit_flash = maxf(player_hit_flash, value)
 func build_ui() -> void:
 	hud_layer = CanvasLayer.new();         add_child(hud_layer)
 	menu_layer = CanvasLayer.new();        add_child(menu_layer)
@@ -726,6 +740,8 @@ func _reset_run() -> void:
 		player_controller.reset_visual_motion()
 		sync_player_visual_from_controller()
 	player_hit_flash = 0.0
+	if player_controller != null:
+		player_controller.reset_hit_flash()
 	dash_cooldown = 0.0
 	dash_timer = 0.0
 	if player_controller != null:
@@ -882,7 +898,11 @@ func _update_player_movement(delta: float) -> void:
 		if player_state in ["moving_left", "moving_right"]:
 			player_state = "running"
 
-	player_hit_flash = maxf(0.0, player_hit_flash - delta * 2.5)
+	if player_controller != null:
+		player_controller.update_hit_flash(delta)
+		sync_player_hit_flash_from_controller()
+	else:
+		player_hit_flash = maxf(0.0, player_hit_flash - delta * 2.5)
 
 	if invulnerable_timer > 0.0:
 		invulnerable_timer -= delta
