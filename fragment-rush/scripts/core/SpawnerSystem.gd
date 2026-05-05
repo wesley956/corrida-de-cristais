@@ -60,3 +60,35 @@ func get_timer_state() -> Dictionary:
 		"crystal_spawn_timer": crystal_spawn_timer,
 		"power_spawn_timer": power_spawn_timer
 	}
+
+# ── Obstacle pattern bridge ───────────────────────────────────────────────────
+func pick_obstacle_pattern(difficulty: float) -> String:
+	var pattern_weights: Array[float] = [40.0, 25.0, 18.0, 12.0, 5.0]
+
+	if difficulty < 1.0:
+		pattern_weights = [70.0, 20.0, 10.0, 0.0, 0.0]
+	elif difficulty < 2.5:
+		pattern_weights = [50.0, 28.0, 15.0, 7.0, 0.0]
+
+	var patterns: Array[String] = ["single", "wall_gap", "alternate", "narrow", "barrage"]
+	return _weighted_choice(patterns, pattern_weights)
+
+
+func _weighted_choice(options: Array, weights: Array) -> String:
+	var total: float = 0.0
+
+	for w in weights:
+		total += float(w)
+
+	if total <= 0.0:
+		return str(options[0])
+
+	var roll: float = rng.randf() * total
+	var acc: float = 0.0
+
+	for i in range(options.size()):
+		acc += float(weights[i])
+		if roll <= acc:
+			return str(options[i])
+
+	return str(options[0])
