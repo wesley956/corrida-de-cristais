@@ -1286,9 +1286,15 @@ func _spawn_crystal(lane: int, y: float, ctype: Dictionary) -> void:
 	})
 
 func _spawn_powerup() -> void:
-	var ptypes: Array[String] = ["magnet", "shield", "slowmo", "dash_boost"]
-	var pw: Array[float] = [45.0, 30.0, 15.0, 10.0]
-	var chosen: String = _weighted_choice(ptypes, pw)
+	var chosen: String = "magnet"
+
+	if spawner_system != null:
+		chosen = spawner_system.pick_powerup_type()
+	else:
+		var ptypes: Array[String] = ["magnet", "shield", "slowmo", "dash_boost"]
+		var pw: Array[float] = [45.0, 30.0, 15.0, 10.0]
+		chosen = _weighted_choice(ptypes, pw)
+
 	entities.append({
 		"type": "powerup",
 		"x": screen_lane_x(rng.randi_range(0, 2)),
@@ -1296,7 +1302,6 @@ func _spawn_powerup() -> void:
 		"ptype": chosen,
 		"age": 0.0
 	})
-
 func _weighted_choice(options: Array, weights: Array) -> String:
 	var total: float = 0.0
 	for w in weights:
