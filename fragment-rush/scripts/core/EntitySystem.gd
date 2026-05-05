@@ -1,10 +1,24 @@
 extends Node
 ## EntitySystem.gd
-## Ponte segura para centralizar acesso à lista de entidades.
+## Ponte segura para centralizar operações básicas de entidades.
 ##
-## Nesta etapa, ele NÃO controla colisão, desenho, movimento ou coleta.
-## Ele apenas recebe a referência do Array entities do Main.gd e opera sobre ela.
+## Responsabilidades atuais:
+## - Manter referência ao Array entities do Main.gd.
+## - Adicionar e limpar entidades.
+## - Atualizar movimento básico e idade.
+## - Aplicar magnetismo em cristais.
+## - Calcular métricas simples de colisão.
+## - Remover entidades por índice.
+##
+## Ainda NÃO controla:
+## - Coleta.
+## - Dano.
+## - Power-ups.
+## - Desenho.
+## - Recompensas.
+## - Missões.
 
+# ── Bound entities ────────────────────────────────────────────────────────────
 var entities_ref: Array = []
 var has_bound_entities: bool = false
 
@@ -14,6 +28,18 @@ func bind_entities(source_entities: Array) -> void:
 	has_bound_entities = true
 
 
+func get_entities() -> Array:
+	return entities_ref
+
+
+func count() -> int:
+	if not has_bound_entities:
+		return 0
+
+	return entities_ref.size()
+
+
+# ── Basic operations ──────────────────────────────────────────────────────────
 func add_entity(entity: Dictionary) -> void:
 	if not has_bound_entities:
 		return
@@ -28,17 +54,19 @@ func clear_entities() -> void:
 	entities_ref.clear()
 
 
-func get_entities() -> Array:
-	return entities_ref
-
-
-func count() -> int:
+func remove_entities_by_indices(indices: Array[int]) -> void:
 	if not has_bound_entities:
-		return 0
+		return
 
-	return entities_ref.size()
+	var sorted_indices: Array[int] = indices.duplicate()
+	sorted_indices.reverse()
 
-# ── Entity motion bridge ──────────────────────────────────────────────────────
+	for idx in sorted_indices:
+		if idx >= 0 and idx < entities_ref.size():
+			entities_ref.remove_at(idx)
+
+
+# ── Motion ────────────────────────────────────────────────────────────────────
 func update_entity_motion(entity: Dictionary, delta: float, speed: float) -> Dictionary:
 	var updated: Dictionary = entity.duplicate(true)
 	updated["y"] = float(updated["y"]) + speed * delta
@@ -50,7 +78,8 @@ func update_entity_motion(entity: Dictionary, delta: float, speed: float) -> Dic
 func is_entity_out_of_bounds(entity: Dictionary, view_height: float) -> bool:
 	return float(entity["y"]) > view_height + 120.0
 
-# ── Entity magnet bridge ──────────────────────────────────────────────────────
+
+# ── Magnet ────────────────────────────────────────────────────────────────────
 func apply_crystal_magnet(
 	entity: Dictionary,
 	delta: float,
@@ -75,7 +104,8 @@ func apply_crystal_magnet(
 
 	return updated
 
-# ── Entity collision metrics bridge ───────────────────────────────────────────
+
+# ── Collision metrics ─────────────────────────────────────────────────────────
 func get_collision_delta(entity: Dictionary, player_position: Vector2) -> Vector2:
 	return Vector2(
 		absf(player_position.x - float(entity["x"])),
@@ -103,15 +133,3 @@ func is_powerup_colliding(entity: Dictionary, player_position: Vector2) -> bool:
 	var radius: float = 30.0
 
 	return delta.x < radius and delta.y < radius
-
-# ── Entity removal bridge ─────────────────────────────────────────────────────
-func remove_entities_by_indices(indices: Array[int]) -> void:
-	if not has_bound_entities:
-		return
-
-	var sorted_indices: Array[int] = indices.duplicate()
-	sorted_indices.reverse()
-
-	for idx in sorted_indices:
-		if idx >= 0 and idx < entities_ref.size():
-			entities_ref.remove_at(idx)
