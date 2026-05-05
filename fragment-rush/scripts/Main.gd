@@ -361,12 +361,26 @@ func build_game_nodes() -> void:
 	player_controller.name = "PlayerController"
 	add_child(player_controller)
 	player_controller.setup(player_lane)
+	player_controller.set_state(player_state)
 
 	target_x = player_controller.target_x
 	player = Node2D.new()
 	player.name = "StickRunner"
 	player.position = Vector2(target_x, GameConfig.PLAYER_Y)
 	add_child(player)
+
+
+func set_player_state(new_state: String) -> void:
+	if player_controller != null:
+		player_controller.set_state(new_state)
+		player_state = player_controller.get_state()
+	else:
+		player_state = new_state
+
+
+func sync_player_state_from_controller() -> void:
+	if player_controller != null:
+		player_state = player_controller.get_state()
 func build_ui() -> void:
 	hud_layer = CanvasLayer.new();         add_child(hud_layer)
 	menu_layer = CanvasLayer.new();        add_child(menu_layer)
@@ -695,7 +709,7 @@ func _reset_run() -> void:
 	else:
 		target_x = screen_lane_x(player_lane)
 	player.position = Vector2(target_x, GameConfig.PLAYER_Y)
-	player_state = "running"
+	set_player_state("running")
 	player_lean = 0.0
 	player_lean_target = 0.0
 	player_hit_flash = 0.0
@@ -739,7 +753,7 @@ func _update_countdown(delta: float) -> void:
 
 func game_over() -> void:
 	invulnerable_timer = 99.0
-	player_state = "hit"
+	set_player_state("hit")
 	player_hit_flash = 0.8
 	camera_shake = maxf(camera_shake, 18.0)
 	flash_alpha = 0.35
@@ -837,7 +851,7 @@ func _update_player_movement(delta: float) -> void:
 	if absf(player.position.x - target_x) < 6.0:
 		player_lean_target = 0.0
 		if player_state in ["moving_left", "moving_right"]:
-			player_state = "running"
+			set_player_state("running")
 	# Run animation
 	if player_state == "running":
 		player_run_phase += delta
@@ -988,7 +1002,7 @@ func _hit_obstacle() -> void:
 	combo = 0
 	resonance_value = maxf(resonance_value - 35.0, 0.0)
 	invulnerable_timer = 1.8
-	player_state = "hit"
+	set_player_state("hit")
 	player_hit_flash = 1.0
 	camera_shake = maxf(camera_shake, 14.0)
 	flash_alpha = maxf(flash_alpha, 0.28)
@@ -1032,7 +1046,7 @@ func _update_dash(delta: float) -> void:
 			dash_cooldown = maxf(0.0, dash_cooldown - delta)
 
 	if dash_timer <= 0.0 and player_state == "dash":
-		player_state = "running"
+		set_player_state("running")
 func _update_powerups(delta: float) -> void:
 	if magnet_timer > 0.0:
 		magnet_timer -= delta
@@ -1073,25 +1087,25 @@ func move_lane(direction: int) -> void:
 	if player_controller == null:
 		return
 
-	var changed: bool = player_controller.move_lane(direction, player_state)
+	var changed: bool = player_controller.move_lane(direction)
 	if not changed:
 		return
 
 	player_lane = player_controller.player_lane
 	target_x = player_controller.target_x
 	player_lean_target = -0.24 if direction < 0 else 0.24
-	player_state = "moving_left" if direction < 0 else "moving_right"
+	set_player_state("moving_left" if direction < 0 else "moving_right")
 
 func do_dash() -> void:
 	if player_controller == null:
 		return
 
-	if not player_controller.request_dash(player_state, tech_level("dash")):
+	if not player_controller.request_dash(tech_level("dash")):
 		return
 
 	dash_cooldown = player_controller.dash_cooldown
 	dash_timer = player_controller.dash_timer
-	player_state = "dash"
+	set_player_state("dash")
 	invulnerable_timer = maxf(invulnerable_timer, 0.38)
 	dashes_used_run += 1
 	spawn_afterimage(player.position, skin_glow_color(selected_skin), 0.26)

@@ -15,6 +15,7 @@ signal player_lane_changed(lane: int)
 signal player_dash_used
 signal player_hit
 signal player_revived
+signal player_state_changed(old_state: String, new_state: String)
 
 # ── Score / progress ──────────────────────────────────────────────────────────
 signal distance_updated(distance: float)
@@ -77,6 +78,10 @@ func emit_player_hit() -> void:
 
 func emit_player_revived() -> void:
 	player_revived.emit()
+
+
+func emit_player_state_changed(old_state: String, new_state: String) -> void:
+	player_state_changed.emit(old_state, new_state)
 
 
 func emit_distance_updated(distance: float) -> void:
