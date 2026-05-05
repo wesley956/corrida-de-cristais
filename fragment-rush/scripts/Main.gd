@@ -7,6 +7,7 @@ const EntitySystemBridge = preload("res://scripts/core/EntitySystem.gd")
 const RunStateSystemBridge = preload("res://scripts/core/RunStateSystem.gd")
 const InputSystemBridge = preload("res://scripts/core/InputSystem.gd")
 const VfxSystemBridge = preload("res://scripts/core/VfxSystem.gd")
+const HudSystemBridge = preload("res://scripts/core/HudSystem.gd")
 
 # Fragment Rush: Corrida dos Cristais
 # v2.0 - Wuxia Reborn: Stickman Marcial, Bambu, Jade e Fluxo Espiritual
@@ -65,6 +66,7 @@ var spawner_system: Node
 var entity_system: Node
 var input_system: Node
 var vfx_system: Node
+var hud_system: Node
 var hud_layer: CanvasLayer
 var menu_layer: CanvasLayer
 var result_layer: CanvasLayer
@@ -419,6 +421,10 @@ func build_game_nodes() -> void:
 		vfx_png_sprites
 	)
 	add_child(vfx_system)
+
+	hud_system = HudSystemBridge.new()
+	hud_system.name = "HudSystem"
+	add_child(hud_system)
 
 
 func set_player_state(new_state: String) -> void:
@@ -1309,10 +1315,18 @@ func _update_powerups(delta: float) -> void:
 func _update_resonance(_delta: float) -> void:
 	pass
 
+
 func _update_status(delta: float) -> void:
+	if hud_system != null:
+		status_label.modulate.a = hud_system.update_status_alpha(
+			status_label.text,
+			status_label.modulate.a,
+			delta
+		)
+		return
+
 	if status_label.text != "" and status_label.modulate.a > 0.0:
 		status_label.modulate.a = maxf(0.0, status_label.modulate.a - delta * 0.55)
-
 func _update_env_particles(delta: float) -> void:
 	for i in range(falling_leaves.size()):
 		var lf := falling_leaves[i]
@@ -1797,13 +1811,44 @@ func _technique_ui_data() -> Array[Dictionary]:
 	return result
 
 # ── Legacy UI updates ─────────────────────────────────────────────────────────
+
 func update_hud() -> void:
+	if hud_system != null:
+		var hud_state: Dictionary = hud_system.build_hud_state(
+			crystals_run,
+			score,
+			distance,
+			best_distance,
+			combo,
+			dash_cooldown,
+			resonance_value,
+			flow_timer,
+			magnet_timer,
+			_combo_color()
+		)
+
+		crystal_label.text = str(hud_state["crystal_text"])
+		score_label.text = str(hud_state["score_text"])
+		distance_label.text = str(hud_state["distance_text"])
+		hud_best_label.text = str(hud_state["best_text"])
+
+		combo_label.text = str(hud_state["combo_text"])
+		combo_label.add_theme_color_override("font_color", hud_state["combo_color"])
+
+		dash_label.text = str(hud_state["dash_text"])
+		dash_label.add_theme_color_override("font_color", hud_state["dash_color"])
+
+		resonance_bar.value = float(hud_state["resonance_value"])
+		resonance_label.text = str(hud_state["resonance_text"])
+		return
+
 	crystal_label.text = str(crystals_run)
 	score_label.text   = "Pts %d" % score
 	distance_label.text = "%d m" % int(distance)
 	hud_best_label.text = "Recorde %d m" % int(best_distance)
 	combo_label.text = "x%d" % max(1, combo)
 	combo_label.add_theme_color_override("font_color", _combo_color())
+
 	var dc: float = maxf(0.0, dash_cooldown)
 	if dc > 0.0:
 		dash_label.text = "Dash %.1fs" % dc
@@ -1811,6 +1856,7 @@ func update_hud() -> void:
 	else:
 		dash_label.text = "Dash pronto"
 		dash_label.add_theme_color_override("font_color", Color(0.76, 0.98, 0.82, 0.90))
+
 	resonance_bar.value = resonance_value
 	if flow_timer > 0.0:
 		resonance_label.text = "FLUXO ATIVO  %.1fs" % flow_timer
@@ -1818,7 +1864,6 @@ func update_hud() -> void:
 		resonance_label.text = "TOQUE DE JADE  %.1fs" % magnet_timer
 	else:
 		resonance_label.text = "Ressonância"
-
 func _combo_color() -> Color:
 	if combo >= 20: return GameConfig.C_GOLD
 	if combo >= 10: return Color(1.0, 0.78, 0.30, 1.0)
@@ -1876,14 +1921,21 @@ func update_cultivation_ui() -> void:
 		var action: String = "MAX" if level >= max_lv else "%d cristais" % technique_price(tech_id)
 		b.text = "%s\nNv.%d/%d  •  %s" % [str(td["name"]), level, max_lv, action]
 
+
 func show_status(text: String, color: Color) -> void:
 	if status_label == null:
 		return
+
+	if hud_system != null:
+		var status_state: Dictionary = hud_system.build_status_state(text, color)
+		status_label.text = str(status_state["text"])
+		status_label.add_theme_color_override("font_color", status_state["color"])
+		status_label.modulate.a = float(status_state["alpha"])
+		return
+
 	status_label.text = text
 	status_label.add_theme_color_override("font_color", color)
 	status_label.modulate.a = 1.0
-
-# ── Skin helpers ──────────────────────────────────────────────────────────────
 func skin_color(skin_id: String) -> Color:
 	match skin_id:
 		"nucleo_errante":       return Color(0.220, 0.920, 0.560, 1.0)
