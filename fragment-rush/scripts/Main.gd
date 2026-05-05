@@ -5,6 +5,7 @@ const SpawnerSystemBridge = preload("res://scripts/core/SpawnerSystem.gd")
 const EntityFactoryBridge = preload("res://scripts/core/EntityFactory.gd")
 const EntitySystemBridge = preload("res://scripts/core/EntitySystem.gd")
 const RunStateSystemBridge = preload("res://scripts/core/RunStateSystem.gd")
+const InputSystemBridge = preload("res://scripts/core/InputSystem.gd")
 
 # Fragment Rush: Corrida dos Cristais
 # v2.0 - Wuxia Reborn: Stickman Marcial, Bambu, Jade e Fluxo Espiritual
@@ -61,6 +62,7 @@ var player: Node2D
 var player_controller: Node
 var spawner_system: Node
 var entity_system: Node
+var input_system: Node
 var hud_layer: CanvasLayer
 var menu_layer: CanvasLayer
 var result_layer: CanvasLayer
@@ -321,9 +323,15 @@ func _process(delta: float) -> void:
 	queue_redraw()
 
 # ── Input ─────────────────────────────────────────────────────────────────────
+
 func _unhandled_input(event: InputEvent) -> void:
+	if input_system != null:
+		input_system.handle_unhandled_input(event, screen)
+		return
+
 	if screen != "game":
 		return
+
 	if event is InputEventScreenTouch:
 		var te: InputEventScreenTouch = event as InputEventScreenTouch
 		if te.pressed:
@@ -336,6 +344,7 @@ func _unhandled_input(event: InputEvent) -> void:
 				move_lane(1 if sd.x > 0.0 else -1)
 			elif absf(sd.y) < 80.0:
 				do_dash()
+
 	if event is InputEventScreenDrag:
 		var de: InputEventScreenDrag = event as InputEventScreenDrag
 		var dd: Vector2 = de.position - touch_start
@@ -344,11 +353,16 @@ func _unhandled_input(event: InputEvent) -> void:
 			touch_start = de.position
 
 func _input(event: InputEvent) -> void:
+	if input_system != null:
+		input_system.handle_input(event, screen)
+		return
+
 	if event.is_action_pressed("ui_cancel"):
 		if screen == "game":
 			pause_game()
 		elif screen == "pause":
 			resume_game()
+
 	if screen == "game":
 		if event.is_action_pressed("move_left"):
 			move_lane(-1)
@@ -356,9 +370,6 @@ func _input(event: InputEvent) -> void:
 			move_lane(1)
 		if event.is_action_pressed("dash") or event.is_action_pressed("ui_accept"):
 			do_dash()
-
-# ── Game nodes ────────────────────────────────────────────────────────────────
-
 func screen_lane_x(lane: int) -> float:
 	return PlayerControllerBridge.screen_lane_x(lane)
 
@@ -386,6 +397,14 @@ func build_game_nodes() -> void:
 	entity_system.name = "EntitySystem"
 	entity_system.bind_entities(entities)
 	add_child(entity_system)
+
+	input_system = InputSystemBridge.new()
+	input_system.name = "InputSystem"
+	add_child(input_system)
+	input_system.move_requested.connect(move_lane)
+	input_system.dash_requested.connect(do_dash)
+	input_system.pause_requested.connect(pause_game)
+	input_system.resume_requested.connect(resume_game)
 
 
 func set_player_state(new_state: String) -> void:
@@ -782,6 +801,9 @@ func _reset_run() -> void:
 	shockwaves.clear()
 	afterimages.clear()
 	skin_trails.clear()
+
+	if input_system != null:
+		input_system.reset_touch()
 
 	var run_state: Dictionary = RunStateSystemBridge.build_default_run_state(rng)
 	apply_run_state(run_state)
