@@ -96,3 +96,9 @@ func _weighted_choice(options: Array, weights: Array) -> String:
 # ── Crystal pattern bridge ────────────────────────────────────────────────────
 func pick_crystal_pattern() -> int:
 	return rng.randi_range(0, 3)
+
+# ── PowerUp type bridge ───────────────────────────────────────────────────────
+func pick_powerup_type() -> String:
+	var ptypes: Array[String] = ["magnet", "shield", "slowmo", "dash_boost"]
+	var weights: Array[float] = [45.0, 30.0, 15.0, 10.0]
+	return _weighted_choice(ptypes, weights)
