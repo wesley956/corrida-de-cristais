@@ -1074,47 +1074,74 @@ func _update_entities(delta: float) -> void:
 		for idx in to_remove:
 			if idx < entities.size():
 				entities.remove_at(idx)
+
 func _collect_crystal(e: Dictionary) -> void:
 	var ctype: Dictionary = _get_crystal_type(str(e.get("crystal_type", "common")))
+
 	var val: int = int(ctype["value"])
+	var score_gain: int = val * 10
+	var should_combo_vfx: bool = false
+	var is_rare: bool = str(e.get("crystal_type", "common")) != "common"
+	var should_activate_flow: bool = false
+
 	if entity_system != null:
-		val = entity_system.calculate_crystal_value(val, flow_timer > 0.0, combo)
+		var collection_state: Dictionary = entity_system.build_crystal_collection_state(
+			e,
+			int(ctype["value"]),
+			flow_timer > 0.0,
+			combo,
+			max_combo_run,
+			resonance_value
+		)
+
+		val = int(collection_state["value"])
+		score_gain = int(collection_state["score_gain"])
+		combo = int(collection_state["combo"])
+		max_combo_run = int(collection_state["max_combo"])
+		if bool(collection_state["combo_pop"]):
+			combo_pop_timer = 1.0
+		should_combo_vfx = bool(collection_state["combo_vfx"])
+		resonance_value = float(collection_state["resonance_value"])
+		should_activate_flow = bool(collection_state["activate_flow"])
+		is_rare = bool(collection_state["is_rare"])
 	else:
 		if flow_timer > 0.0:
 			val = int(ceil(float(val) * 1.5))
 		if combo > 0:
 			val = int(ceil(float(val) * (1.0 + float(combo) * 0.05)))
+		score_gain = val * 10
+		combo += 1
+		max_combo_run = maxi(max_combo_run, combo)
+		if combo > 1:
+			combo_pop_timer = 1.0
+		should_combo_vfx = combo >= 5 and combo % 5 == 0
+		resonance_value = minf(resonance_value + 8.0 + float(combo) * 0.6, 100.0)
+		should_activate_flow = resonance_value >= 100.0 and flow_timer <= 0.0
+
 	crystals_run += val
-	score += val * 10
-	combo += 1
-	max_combo_run = maxi(max_combo_run, combo)
-	if combo > 1:
-		combo_pop_timer = 1.0
-	var should_combo_vfx: bool = combo >= 5 and combo % 5 == 0
-	if entity_system != null:
-		should_combo_vfx = entity_system.should_spawn_combo_vfx(combo)
+	score += score_gain
+
 	if should_combo_vfx:
 		_spawn_vfx_png(Vector2(float(e["x"]), float(e["y"])), "combo", ctype["glow"], 150.0, 0.38, rng.randf() * TAU)
-	var resonance_gain: float = 8.0 + float(combo) * 0.6
-	if entity_system != null:
-		resonance_gain = entity_system.calculate_resonance_gain(combo)
-	resonance_value = minf(resonance_value + resonance_gain, 100.0)
-	if resonance_value >= 100.0 and flow_timer <= 0.0:
+
+	if should_activate_flow:
 		activate_flow_state()
+
 	var cpos: Vector2 = Vector2(float(e["x"]), float(e["y"]))
 	var cclr: Color = ctype["color"]
 	var cglow: Color = ctype["glow"]
+
 	for _i in range(6):
 		spawn_particle(cpos + Vector2(rng.randf_range(-14.0, 14.0), rng.randf_range(-14.0, 14.0)), cclr, 5, 0.30)
+
 	spawn_shockwave(cpos, cglow, 8.0, 52.0, 0.22)
 	_spawn_vfx_png(cpos, "pickup", cglow, 92.0, 0.25, rng.randf() * TAU)
 	flash_alpha = maxf(flash_alpha, 0.03)
-	var is_rare: bool = str(e.get("crystal_type", "common")) != "common"
-	if entity_system != null:
-		is_rare = entity_system.is_rare_crystal(e)
+
 	if is_rare:
 		rare_crystals_run += 1
 		spawn_shockwave(cpos, cglow, 14.0, 80.0, 0.35)
+
 	_update_mission_progress("collect_50", crystals_run)
 	if combo >= 10:
 		_update_mission_progress("combo_10", combo)
@@ -1122,22 +1149,38 @@ func _collect_crystal(e: Dictionary) -> void:
 func _hit_obstacle() -> void:
 	if invulnerable_timer > 0.0:
 		return
-	combo = 0
-	resonance_value = maxf(resonance_value - 35.0, 0.0)
-	invulnerable_timer = 1.8
+
+	if entity_system != null:
+		var hit_state: Dictionary = entity_system.build_obstacle_hit_state(resonance_value, 1.8)
+		combo = int(hit_state["combo"])
+		resonance_value = float(hit_state["resonance_value"])
+		invulnerable_timer = float(hit_state["invulnerable_timer"])
+	else:
+		combo = 0
+		resonance_value = maxf(resonance_value - 35.0, 0.0)
+		invulnerable_timer = 1.8
+
 	set_player_state("hit")
-	player_hit_flash = 1.0
+	trigger_player_hit_flash(1.0)
 	camera_shake = maxf(camera_shake, 14.0)
 	flash_alpha = maxf(flash_alpha, 0.28)
+
 	spawn_shockwave(player.position, GameConfig.C_RUBY, 22.0, 160.0, 0.42)
 	_spawn_vfx_png(player.position, "impact", GameConfig.C_RUBY, 190.0, 0.40, rng.randf() * TAU)
+
 	for _i in range(14):
-		spawn_particle(player.position + Vector2(rng.randf_range(-50.0, 50.0), rng.randf_range(-50.0, 50.0)), Color(GameConfig.C_RUBY.r, GameConfig.C_RUBY.g, GameConfig.C_RUBY.b, 0.76), 6, 0.38)
+		spawn_particle(
+			player.position + Vector2(rng.randf_range(-50.0, 50.0), rng.randf_range(-50.0, 50.0)),
+			Color(GameConfig.C_RUBY.r, GameConfig.C_RUBY.g, GameConfig.C_RUBY.b, 0.76),
+			6,
+			0.38
+		)
+
 	show_status("FRAGMENTADO", GameConfig.C_RUBY)
+
 	await get_tree().create_timer(0.8).timeout
 	if invulnerable_timer > 0.5:
 		game_over()
-
 func _collect_powerup(e: Dictionary) -> void:
 	var ptype: String = str(e.get("ptype", "magnet"))
 

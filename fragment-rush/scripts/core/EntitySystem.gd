@@ -248,3 +248,41 @@ func get_powerup_status(powerup_type: String) -> Dictionary:
 		"text": "",
 		"color": GameConfig.C_JADE
 	}
+
+# ── Gameplay state helpers ────────────────────────────────────────────────────
+func build_crystal_collection_state(
+	entity: Dictionary,
+	base_value: int,
+	flow_active: bool,
+	current_combo: int,
+	current_max_combo: int,
+	current_resonance: float
+) -> Dictionary:
+	var value: int = calculate_crystal_value(base_value, flow_active, current_combo)
+	var next_combo: int = current_combo + 1
+	var next_max_combo: int = maxi(current_max_combo, next_combo)
+	var resonance_gain: float = calculate_resonance_gain(next_combo)
+	var next_resonance: float = minf(current_resonance + resonance_gain, 100.0)
+
+	return {
+		"value": value,
+		"score_gain": value * 10,
+		"combo": next_combo,
+		"max_combo": next_max_combo,
+		"combo_pop": next_combo > 1,
+		"combo_vfx": should_spawn_combo_vfx(next_combo),
+		"resonance_value": next_resonance,
+		"activate_flow": next_resonance >= 100.0 and not flow_active,
+		"is_rare": is_rare_crystal(entity)
+	}
+
+
+func build_obstacle_hit_state(
+	current_resonance: float,
+	new_invulnerable_time: float = 1.8
+) -> Dictionary:
+	return {
+		"combo": 0,
+		"resonance_value": maxf(current_resonance - 35.0, 0.0),
+		"invulnerable_timer": new_invulnerable_time
+	}
