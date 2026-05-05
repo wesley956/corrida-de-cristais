@@ -1140,23 +1140,41 @@ func _hit_obstacle() -> void:
 
 func _collect_powerup(e: Dictionary) -> void:
 	var ptype: String = str(e.get("ptype", "magnet"))
+	if entity_system != null:
+		ptype = entity_system.get_powerup_type(e)
+
 	match ptype:
 		"magnet":
-			magnet_timer = 5.0 + float(tech_level("jade")) * 0.6
+			if entity_system != null:
+				magnet_timer = entity_system.get_magnet_duration(tech_level("jade"))
+			else:
+				magnet_timer = 5.0 + float(tech_level("jade")) * 0.6
 			show_status("TOQUE DE JADE — ÍMÃS", GameConfig.C_JADE)
+
 		"shield":
-			invulnerable_timer = maxf(invulnerable_timer, 4.5)
+			var shield_duration: float = 4.5
+			if entity_system != null:
+				shield_duration = entity_system.get_shield_duration()
+			invulnerable_timer = maxf(invulnerable_timer, shield_duration)
 			show_status("ESCUDO ESPIRITUAL", GameConfig.C_PEARL)
+
 		"slowmo":
-			slowmo_timer = maxf(slowmo_timer, 3.0)
+			var slowmo_duration: float = 3.0
+			if entity_system != null:
+				slowmo_duration = entity_system.get_slowmo_duration()
+			slowmo_timer = maxf(slowmo_timer, slowmo_duration)
 			show_status("FLUXO LENTO", GameConfig.C_VIOLET)
+
 		"dash_boost":
-			dash_cooldown = 0.0
+			var should_reset_dash: bool = true
+			if entity_system != null:
+				should_reset_dash = entity_system.should_reset_dash_cooldown(ptype)
+			if should_reset_dash:
+				dash_cooldown = 0.0
 			show_status("PASSO CARREGADO", GameConfig.C_ENERGY)
+
 	spawn_shockwave(Vector2(float(e["x"]), float(e["y"])), GameConfig.C_GOLD, 20.0, 110.0, 0.40)
 	flash_alpha = maxf(flash_alpha, 0.06)
-
-
 func _update_dash(delta: float) -> void:
 	if player_controller != null:
 		player_controller.update_dash_timers(delta)
