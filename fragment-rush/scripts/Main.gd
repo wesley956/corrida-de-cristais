@@ -1006,14 +1006,24 @@ func _update_entities(delta: float) -> void:
 			to_remove.append(i)
 			continue
 
-		# Magnet
-		if e["type"] == "crystal" and magnet_timer > 0.0:
-			var diff: Vector2 = player.position - Vector2(float(e["x"]), float(e["y"]))
-			var magnet_range: float = 160.0 + float(tech_level("jade")) * 28.0
-			if diff.length() < magnet_range:
-				e["x"] = float(e["x"]) + diff.x * delta * 5.5
-				e["y"] = float(e["y"]) + diff.y * delta * 5.5
-				entities[i] = e
+# Magnet
+		if entity_system != null:
+			e = entity_system.apply_crystal_magnet(
+				e,
+				delta,
+				player.position,
+				magnet_timer,
+				tech_level("jade")
+			)
+			entities[i] = e
+		else:
+			if e["type"] == "crystal" and magnet_timer > 0.0:
+				var diff: Vector2 = player.position - Vector2(float(e["x"]), float(e["y"]))
+				var magnet_range: float = 160.0 + float(tech_level("jade")) * 28.0
+				if diff.length() < magnet_range:
+					e["x"] = float(e["x"]) + diff.x * delta * 5.5
+					e["y"] = float(e["y"]) + diff.y * delta * 5.5
+					entities[i] = e
 
 		# Collision
 		var ex: float = float(e["x"])
