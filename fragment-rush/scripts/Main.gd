@@ -1140,37 +1140,44 @@ func _hit_obstacle() -> void:
 
 func _collect_powerup(e: Dictionary) -> void:
 	var ptype: String = str(e.get("ptype", "magnet"))
+
 	if entity_system != null:
 		ptype = entity_system.get_powerup_type(e)
+		var effect_state: Dictionary = entity_system.build_powerup_effect_state(
+			ptype,
+			magnet_timer,
+			invulnerable_timer,
+			slowmo_timer,
+			dash_cooldown,
+			tech_level("jade")
+		)
+
+		magnet_timer = float(effect_state["magnet_timer"])
+		invulnerable_timer = float(effect_state["invulnerable_timer"])
+		slowmo_timer = float(effect_state["slowmo_timer"])
+		dash_cooldown = float(effect_state["dash_cooldown"])
+
+		if bool(effect_state.get("reset_dash_cooldown", false)) and player_controller != null:
+			player_controller.dash_cooldown = 0.0
+	else:
+		match ptype:
+			"magnet":
+				magnet_timer = 5.0 + float(tech_level("jade")) * 0.6
+			"shield":
+				invulnerable_timer = maxf(invulnerable_timer, 4.5)
+			"slowmo":
+				slowmo_timer = maxf(slowmo_timer, 3.0)
+			"dash_boost":
+				dash_cooldown = 0.0
 
 	match ptype:
 		"magnet":
-			if entity_system != null:
-				magnet_timer = entity_system.get_magnet_duration(tech_level("jade"))
-			else:
-				magnet_timer = 5.0 + float(tech_level("jade")) * 0.6
 			show_status("TOQUE DE JADE — ÍMÃS", GameConfig.C_JADE)
-
 		"shield":
-			var shield_duration: float = 4.5
-			if entity_system != null:
-				shield_duration = entity_system.get_shield_duration()
-			invulnerable_timer = maxf(invulnerable_timer, shield_duration)
 			show_status("ESCUDO ESPIRITUAL", GameConfig.C_PEARL)
-
 		"slowmo":
-			var slowmo_duration: float = 3.0
-			if entity_system != null:
-				slowmo_duration = entity_system.get_slowmo_duration()
-			slowmo_timer = maxf(slowmo_timer, slowmo_duration)
 			show_status("FLUXO LENTO", GameConfig.C_VIOLET)
-
 		"dash_boost":
-			var should_reset_dash: bool = true
-			if entity_system != null:
-				should_reset_dash = entity_system.should_reset_dash_cooldown(ptype)
-			if should_reset_dash:
-				dash_cooldown = 0.0
 			show_status("PASSO CARREGADO", GameConfig.C_ENERGY)
 
 	spawn_shockwave(Vector2(float(e["x"]), float(e["y"])), GameConfig.C_GOLD, 20.0, 110.0, 0.40)

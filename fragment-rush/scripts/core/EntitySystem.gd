@@ -181,3 +181,38 @@ func get_slowmo_duration() -> float:
 
 func should_reset_dash_cooldown(powerup_type: String) -> bool:
 	return powerup_type == "dash_boost"
+
+
+func build_powerup_effect_state(
+	powerup_type: String,
+	current_magnet_timer: float,
+	current_invulnerable_timer: float,
+	current_slowmo_timer: float,
+	current_dash_cooldown: float,
+	jade_level: int
+) -> Dictionary:
+	var state: Dictionary = {
+		"ptype": powerup_type,
+		"magnet_timer": current_magnet_timer,
+		"invulnerable_timer": current_invulnerable_timer,
+		"slowmo_timer": current_slowmo_timer,
+		"dash_cooldown": current_dash_cooldown,
+		"reset_dash_cooldown": false
+	}
+
+	match powerup_type:
+		"magnet":
+			state["magnet_timer"] = get_magnet_duration(jade_level)
+
+		"shield":
+			state["invulnerable_timer"] = maxf(current_invulnerable_timer, get_shield_duration())
+
+		"slowmo":
+			state["slowmo_timer"] = maxf(current_slowmo_timer, get_slowmo_duration())
+
+		"dash_boost":
+			if should_reset_dash_cooldown(powerup_type):
+				state["dash_cooldown"] = 0.0
+				state["reset_dash_cooldown"] = true
+
+	return state
