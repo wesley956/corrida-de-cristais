@@ -984,14 +984,28 @@ func _update_crystal_rain(delta: float) -> void:
 
 func _update_entities(delta: float) -> void:
 	var to_remove: Array[int] = []
+
 	for i in range(entities.size()):
 		var e: Dictionary = entities[i]
-		e["y"] = float(e["y"]) + speed * delta
-		e["age"] = float(e.get("age", 0.0)) + delta
+
+		if entity_system != null:
+			e = entity_system.update_entity_motion(e, delta, speed)
+		else:
+			e["y"] = float(e["y"]) + speed * delta
+			e["age"] = float(e.get("age", 0.0)) + delta
+
 		entities[i] = e
-		if float(e["y"]) > GameConfig.VIEW_H + 120.0:
+
+		var out_of_bounds: bool = false
+		if entity_system != null:
+			out_of_bounds = entity_system.is_entity_out_of_bounds(e, GameConfig.VIEW_H)
+		else:
+			out_of_bounds = float(e["y"]) > GameConfig.VIEW_H + 120.0
+
+		if out_of_bounds:
 			to_remove.append(i)
 			continue
+
 		# Magnet
 		if e["type"] == "crystal" and magnet_timer > 0.0:
 			var diff: Vector2 = player.position - Vector2(float(e["x"]), float(e["y"]))
@@ -1000,11 +1014,13 @@ func _update_entities(delta: float) -> void:
 				e["x"] = float(e["x"]) + diff.x * delta * 5.5
 				e["y"] = float(e["y"]) + diff.y * delta * 5.5
 				entities[i] = e
+
 		# Collision
 		var ex: float = float(e["x"])
 		var ey: float = float(e["y"])
 		var pdx: float = absf(player.position.x - ex)
 		var pdy: float = absf(player.position.y - ey)
+
 		if e["type"] == "crystal":
 			var cr: float = float(e.get("size", 18.0)) + 12.0
 			if pdx < cr and pdy < cr:
@@ -1022,11 +1038,11 @@ func _update_entities(delta: float) -> void:
 			if pdx < pwr and pdy < pwr:
 				_collect_powerup(e)
 				to_remove.append(i)
+
 	to_remove.reverse()
 	for idx in to_remove:
 		if idx < entities.size():
 			entities.remove_at(idx)
-
 func _collect_crystal(e: Dictionary) -> void:
 	var ctype: Dictionary = _get_crystal_type(str(e.get("crystal_type", "common")))
 	var val: int = int(ctype["value"])

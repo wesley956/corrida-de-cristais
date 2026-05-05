@@ -37,3 +37,15 @@ func count() -> int:
 		return 0
 
 	return entities_ref.size()
+
+# ── Entity motion bridge ──────────────────────────────────────────────────────
+func update_entity_motion(entity: Dictionary, delta: float, speed: float) -> Dictionary:
+	var updated: Dictionary = entity.duplicate(true)
+	updated["y"] = float(updated["y"]) + speed * delta
+	updated["age"] = float(updated.get("age", 0.0)) + delta
+
+	return updated
+
+
+func is_entity_out_of_bounds(entity: Dictionary, view_height: float) -> bool:
+	return float(entity["y"]) > view_height + 120.0
